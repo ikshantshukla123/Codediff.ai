@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-// 1. Define the Shape of our Data (The "Contract")
+// 1. Types
 interface Bug {
   type: string;
   line?: number;
@@ -14,11 +14,11 @@ interface BugReport {
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// 2. The Bug Hunter
+// 2. The Bug Hunter (No changes here, this works)
 export async function findBugsWithGemini(diff: string): Promise<BugReport> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash", 
       contents: [
         {
           role: "user",
@@ -33,7 +33,7 @@ export async function findBugsWithGemini(diff: string): Promise<BugReport> {
               Return a JSON object ONLY in this format:
               {
                 "bugs": [
-                  { "type": "Race Condition", "line": 42, "description": "Update without lock", "severity": "HIGH" }
+                  { "type": "Data Leak", "line": 15, "description": "Logging Credit Card CVV", "severity": "HIGH" }
                 ]
               }
               
@@ -57,8 +57,7 @@ export async function findBugsWithGemini(diff: string): Promise<BugReport> {
   }
 }
 
-// 3. The Impact Analyzer (CFO View)
-// 🚨 CHANGE: Replaced 'any' with 'BugReport'
+// 3. The Impact Analyzer (THIS IS THE UPGRADE)
 export async function explainImpactWithGemini(bugs: BugReport, diffContext: string) {
   try {
     const response = await ai.models.generateContent({
@@ -69,15 +68,34 @@ export async function explainImpactWithGemini(bugs: BugReport, diffContext: stri
           parts: [
             {
               text: `
-              You are a CTO summarizing a technical audit.
-              Bugs Found: ${JSON.stringify(bugs)}
+              You are a Chief Risk Officer (CRO) at a major Fintech bank.
+              You are writing a blocking review for a Pull Request.
+
+              **INPUT DATA:**
+              - Bugs Found: ${JSON.stringify(bugs)}
+              - Code Context: ${diffContext.substring(0, 5000)}
+
+              **REQUIRED OUTPUT FORMAT (Markdown):**
               
-              Generate a markdown report explaining:
-              1. 💰 Financial Risk ($ Estimate)
-              2. 🛑 Operational Impact
-              3. 🚦 Go/No-Go Recommendation
-              
-              Use emojis. Keep it short.
+              # 🛡️ CodeDiff Security Audit
+              > **Status:** [Pass/Fail]
+              > **Risk Score:** [0-100]/100
+
+              ## 💰 Financial Exposure Calculation
+              *(Calculate specific potential losses based on the bug type. Be concrete.)*
+              * **Regulatory Fines:** [Estimate GDPR/PCI fines, e.g., "$50,000 per violation"]
+              * **Potential Fraud Loss:** [Estimate based on race conditions, e.g., "Unlimited double-spend risk"]
+              * **Total Liability:** [Sum it up]
+
+              ## 🔍 Technical Findings
+              | Severity | Bug Type | File/Line | Remediation |
+              |----------|----------|-----------|-------------|
+              | [High/Med] | [Name] | [Line #] | [Specific fix, e.g. "Use atomic transactions"] |
+
+              ## 🚦 Executive Recommendation
+              [Clear 2-sentence summary. If failed, explicitly state "DO NOT MERGE".]
+
+              **TONE:** Clinical, Professional, Serious. No shouting caps. Use numbers.
               `
             }
           ]
