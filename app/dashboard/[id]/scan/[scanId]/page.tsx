@@ -1,39 +1,38 @@
 import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { redirect, notFound } from "next/navigation";
-import { ArrowLeft, AlertTriangle, FileCode, CheckCircle } from "lucide-react";
+import { ArrowLeft, ShieldAlert, CheckCircle, AlertTriangle, FileCode, Clock, Bug as BugIcon } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 
 const prisma = new PrismaClient();
 
+// 1. Define the Interface explicitly
 interface Bug {
-  type?: string;
-  severity?: "HIGH" | "MEDIUM" | "LOW";
-  description?: string;
-  file?: string;
-  line?: number;
-  recommendation?: string;
-  fix?: string;
+  type: string;
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  description: string;
+  file: string;
+  line: number;
+  recommendation: string;
 }
 
-export default async function ScanReportPage({ 
+export default async function AnalysisDetailPage({ 
   params 
 }: { 
-  params: Promise<{ id: string; scanId: string }> 
+  params: Promise<{ id: string; scanId: string }> // Changed analysisId -> scanId to match your error path
 }) {
   const { userId } = await auth();
   const { id, scanId } = await params;
 
   if (!userId) redirect("/");
 
-  // Fetch the analysis with repository
   const analysis = await prisma.analysis.findFirst({
     where: {
       id: scanId,
       repository: {
         id: id,
-        userId: userId // Security: Ensure user owns the repo
+        userId: userId 
       }
     },
     include: {
@@ -43,307 +42,293 @@ export default async function ScanReportPage({
 
   if (!analysis) return notFound();
 
-  // Parse bugs from JSON
-  const bugs: Bug[] = Array.isArray(analysis.bugs) ? analysis.bugs : [];
+  // 2. THE FIX: Cast as unknown first, then as Bug[]
+  const bugs = (Array.isArray(analysis.bugs) ? analysis.bugs : []) as unknown as Bug[];
   
-  // Group bugs by severity
   const bugsBySeverity = {
     HIGH: bugs.filter((b) => b.severity === "HIGH"),
     MEDIUM: bugs.filter((b) => b.severity === "MEDIUM"),
     LOW: bugs.filter((b) => b.severity === "LOW"),
   };
 
-  const getStatusBadge = (status: string) => {
-    const baseStyles = "px-3 py-1 rounded text-sm font-semibold border";
+  // Helper colors
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case "VULNERABLE":
-        return `${baseStyles} text-red-400 border-red-500/20 bg-red-500/10`;
-      case "WARNING":
-        return `${baseStyles} text-yellow-400 border-yellow-500/20 bg-yellow-500/10`;
-      case "SECURE":
-        return `${baseStyles} text-emerald-400 border-emerald-500/20 bg-emerald-500/10`;
-      default:
-        return `${baseStyles} text-[#a1a1aa] border-[#262626]`;
+      case "VULNERABLE": return "text-red-400 bg-red-950/30 border-red-900/50";
+      case "WARNING": return "text-yellow-400 bg-yellow-950/30 border-yellow-900/50";
+      case "SECURE": return "text-emerald-400 bg-emerald-950/30 border-emerald-900/50";
+      default: return "text-gray-400 bg-gray-950/30 border-gray-900/50";
     }
   };
 
-  const getSeverityBadge = (severity: string) => {
-    const baseStyles = "px-2 py-0.5 rounded text-xs font-semibold border";
+  const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case "HIGH":
-        return `${baseStyles} text-red-400 border-red-500/20 bg-red-500/10`;
-      case "MEDIUM":
-        return `${baseStyles} text-yellow-400 border-yellow-500/20 bg-yellow-500/10`;
-      case "LOW":
-        return `${baseStyles} text-blue-400 border-blue-500/20 bg-blue-500/10`;
-      default:
-        return `${baseStyles} text-[#a1a1aa] border-[#262626]`;
+      case "HIGH": return "text-red-400 bg-red-950/30 border-red-900/50";
+      case "MEDIUM": return "text-yellow-400 bg-yellow-950/30 border-yellow-900/50";
+      case "LOW": return "text-blue-400 bg-blue-950/30 border-blue-900/50";
+      default: return "text-gray-400 bg-gray-950/30 border-gray-900/50";
     }
   };
-
-  const getRiskColor = (score: number) => {
-    if (score > 70) return "text-red-400";
-    if (score > 40) return "text-yellow-400";
-    return "text-emerald-400";
-  };
-
-  // Executive Summary
-  const executiveSummary = analysis.riskScore > 70
-    ? "High risk detected. Immediate action required. Review all issues before merging. This pull request contains critical security vulnerabilities that could expose your application to significant risks."
-    : analysis.riskScore > 40
-    ? "Moderate risk. Review issues and consider fixes before merging. While not critical, addressing these issues will improve code quality and security posture."
-    : "Low risk. Code appears secure. Proceed with caution. Minor improvements may be suggested but no critical issues were detected.";
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-200 p-8">
+      <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Back Button */}
         <Link 
           href={`/dashboard/${id}`} 
-          className="inline-flex items-center text-[#a1a1aa] hover:text-white transition-colors text-sm"
+          className="inline-flex items-center text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Repository
         </Link>
 
         {/* Header */}
         <div className="border-b border-[#262626] pb-6">
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-semibold text-white mb-2">
+              <h1 className="text-3xl font-bold text-white mb-2">
                 Security Analysis Report
               </h1>
-              <p className="text-[#a1a1aa] font-mono text-sm">
+              <p className="text-gray-500 font-mono text-sm">
                 {analysis.repository.name} • PR #{analysis.prNumber}
               </p>
             </div>
-            <span className={getStatusBadge(analysis.status)}>
+            <span className={`px-3 py-1 rounded text-sm font-semibold border ${getStatusColor(analysis.status)}`}>
               {analysis.status}
             </span>
           </div>
-        </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Left Column - Summary */}
-          <div className="space-y-6">
-            <Card>
-              <h2 className="text-lg font-semibold text-white mb-4">Risk Score</h2>
-              <div className="space-y-4">
-                <div className="flex items-baseline gap-2">
-                  <span className={`text-5xl font-semibold ${getRiskColor(analysis.riskScore)}`}>
-                    {analysis.riskScore}
-                  </span>
-                  <span className="text-[#a1a1aa] text-lg">/100</span>
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <Card className="bg-gradient-to-br from-red-950/20 to-red-900/10 border-red-900/30">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Risk Score</p>
+                  <p className="text-3xl font-bold text-white">{analysis.riskScore}/100</p>
                 </div>
-                <div className="h-2 w-full bg-[#1a1a1a] rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full ${
-                      analysis.riskScore > 70 ? 'bg-red-500' : 
-                      analysis.riskScore > 40 ? 'bg-yellow-500' : 
-                      'bg-emerald-500'
-                    }`}
-                    style={{ width: `${analysis.riskScore}%` }}
-                  />
-                </div>
-                <div className="pt-4 border-t border-[#262626]">
-                  <p className="text-sm text-[#a1a1aa] mb-2">Security Score</p>
-                  <p className="text-2xl font-semibold text-white">{100 - analysis.riskScore}/100</p>
-                </div>
+                <ShieldAlert className="w-8 h-8 text-red-400" />
               </div>
             </Card>
 
-            <Card>
-              <h2 className="text-lg font-semibold text-white mb-4">Executive Summary</h2>
-              <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                {executiveSummary}
-              </p>
+            <Card className="bg-gradient-to-br from-blue-950/20 to-blue-900/10 border-blue-900/30">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Issues Found</p>
+                  <p className="text-3xl font-bold text-white">{analysis.issuesFound}</p>
+                </div>
+                <BugIcon className="w-8 h-8 text-blue-400" />
+              </div>
             </Card>
 
-            <Card>
-              <h2 className="text-lg font-semibold text-white mb-4">Analysis Details</h2>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#a1a1aa]">Analyzed At</span>
-                  <span className="text-white font-mono">
-                    {new Date(analysis.createdAt).toLocaleString()}
-                  </span>
+            <Card className="bg-gradient-to-br from-emerald-950/20 to-emerald-900/10 border-emerald-900/30">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Security Score</p>
+                  <p className="text-3xl font-bold text-white">{100 - analysis.riskScore}/100</p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#a1a1aa]">Issues Found</span>
-                  <span className="text-white">{analysis.issuesFound}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#a1a1aa]">Pull Request</span>
-                  <span className="text-white font-mono">#{analysis.prNumber}</span>
-                </div>
+                <CheckCircle className="w-8 h-8 text-emerald-400" />
               </div>
             </Card>
           </div>
+        </div>
 
-          {/* Right Column - Vulnerabilities */}
-          <div className="space-y-6">
+        {/* Analysis Metadata */}
+        <Card>
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-gray-400" />
+            Analysis Details
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Vulnerabilities ({bugs.length})
-              </h2>
-              
-              {bugs.length === 0 ? (
-                <Card>
-                  <div className="text-center py-12">
-                    <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-                    <h3 className="text-lg font-medium text-white mb-2">No Issues Found</h3>
-                    <p className="text-[#a1a1aa] text-sm">
-                      This pull request appears to be secure with no detected vulnerabilities.
-                    </p>
-                  </div>
-                </Card>
-              ) : (
+              <p className="text-sm text-gray-400 mb-1">Analyzed At</p>
+              <p className="text-white font-mono text-sm">
+                {new Date(analysis.createdAt).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Repository</p>
+              <p className="text-white">{analysis.repository.name}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Pull Request</p>
+              <p className="text-white font-mono">#{analysis.prNumber}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Analysis ID</p>
+              <p className="text-white font-mono text-xs">{analysis.id}</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Risk Score Visualization */}
+        <Card>
+          <h2 className="text-lg font-semibold text-white mb-4">Risk Assessment</h2>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-400">Overall Risk Score</span>
+                <span className="text-2xl font-bold text-white">{analysis.riskScore}/100</span>
+              </div>
+              <div className="h-4 w-full bg-[#262626] rounded-full overflow-hidden">
+                <div 
+                  className={`h-full ${
+                    analysis.riskScore > 70 ? 'bg-red-500' : 
+                    analysis.riskScore > 40 ? 'bg-yellow-500' : 
+                    'bg-emerald-500'
+                  }`}
+                  style={{ width: `${analysis.riskScore}%` }}
+                />
+              </div>
+            </div>
+            <div className="pt-4 border-t border-[#262626]">
+              <p className="text-sm text-gray-400 mb-2">Interpretation</p>
+              <p className="text-white text-sm">
+                {analysis.riskScore > 70 
+                  ? "⚠️ High risk detected. Immediate action required. Review all issues before merging."
+                  : analysis.riskScore > 40
+                  ? "⚡ Moderate risk. Review issues and consider fixes before merging."
+                  : "✅ Low risk. Code appears secure. Proceed with caution."
+                }
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Bugs by Severity */}
+        {bugs.length > 0 ? (
+          <>
+            {/* High Severity Bugs */}
+            {bugsBySeverity.HIGH.length > 0 && (
+              <Card className="border-red-900/50">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                  High Severity Issues ({bugsBySeverity.HIGH.length})
+                </h2>
                 <div className="space-y-4">
-                  {/* High Severity Bugs */}
                   {bugsBySeverity.HIGH.map((bug, index) => (
-                    <Card key={`high-${index}`} className="border-red-500/20">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <FileCode className="w-4 h-4 text-[#a1a1aa]" />
-                            <span className="text-white font-medium text-sm">
-                              {bug.file || "Unknown File"}
-                              {bug.line && <span className="text-[#a1a1aa]">:{bug.line}</span>}
-                            </span>
-                          </div>
-                          <h3 className="text-white font-semibold mb-2">{bug.type || "Security Issue"}</h3>
-                        </div>
-                        <span className={getSeverityBadge("HIGH")}>
+                    <div key={index} className="p-4 bg-[#0a0a0a] rounded-lg border border-red-900/30">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-white font-medium">{bug.type || "Security Issue"}</h3>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold border ${getSeverityColor("HIGH")}`}>
                           HIGH
                         </span>
                       </div>
-                      
                       {bug.description && (
-                        <p className="text-[#a1a1aa] text-sm mb-4 leading-relaxed">
-                          {bug.description}
+                        <p className="text-gray-300 text-sm mb-2">{bug.description}</p>
+                      )}
+                      {bug.file && (
+                        <p className="text-gray-500 text-xs font-mono mb-1">
+                          <FileCode className="w-3 h-3 inline mr-1" />
+                          {bug.file}{bug.line ? `:${bug.line}` : ''}
                         </p>
                       )}
-
-                      {bug.fix && (
-                        <div className="mt-4 pt-4 border-t border-[#262626]">
-                          <p className="text-xs text-[#a1a1aa] mb-2 uppercase tracking-wider">Suggested Fix</p>
-                          <div className="bg-[#0a0a0a] border border-[#262626] rounded-lg p-4 overflow-x-auto">
-                            <pre className="text-xs text-[#a1a1aa] font-mono whitespace-pre-wrap">
-                              <code>{bug.fix}</code>
-                            </pre>
-                          </div>
+                      {bug.recommendation && (
+                        <div className="mt-3 pt-3 border-t border-red-900/20">
+                          <p className="text-xs text-gray-400 mb-1">Recommendation:</p>
+                          <p className="text-sm text-gray-300">{bug.recommendation}</p>
                         </div>
                       )}
-
-                      {bug.recommendation && !bug.fix && (
-                        <div className="mt-4 pt-4 border-t border-[#262626]">
-                          <p className="text-xs text-[#a1a1aa] mb-2 uppercase tracking-wider">Recommendation</p>
-                          <p className="text-sm text-[#a1a1aa]">{bug.recommendation}</p>
-                        </div>
-                      )}
-                    </Card>
+                    </div>
                   ))}
+                </div>
+              </Card>
+            )}
 
-                  {/* Medium Severity Bugs */}
+            {/* Medium Severity Bugs */}
+            {bugsBySeverity.MEDIUM.length > 0 && (
+              <Card className="border-yellow-900/50">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                  Medium Severity Issues ({bugsBySeverity.MEDIUM.length})
+                </h2>
+                <div className="space-y-4">
                   {bugsBySeverity.MEDIUM.map((bug, index) => (
-                    <Card key={`medium-${index}`} className="border-yellow-500/20">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <FileCode className="w-4 h-4 text-[#a1a1aa]" />
-                            <span className="text-white font-medium text-sm">
-                              {bug.file || "Unknown File"}
-                              {bug.line && <span className="text-[#a1a1aa]">:{bug.line}</span>}
-                            </span>
-                          </div>
-                          <h3 className="text-white font-semibold mb-2">{bug.type || "Issue"}</h3>
-                        </div>
-                        <span className={getSeverityBadge("MEDIUM")}>
+                    <div key={index} className="p-4 bg-[#0a0a0a] rounded-lg border border-yellow-900/30">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-white font-medium">{bug.type || "Issue"}</h3>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold border ${getSeverityColor("MEDIUM")}`}>
                           MEDIUM
                         </span>
                       </div>
-                      
                       {bug.description && (
-                        <p className="text-[#a1a1aa] text-sm mb-4 leading-relaxed">
-                          {bug.description}
+                        <p className="text-gray-300 text-sm mb-2">{bug.description}</p>
+                      )}
+                      {bug.file && (
+                        <p className="text-gray-500 text-xs font-mono mb-1">
+                          <FileCode className="w-3 h-3 inline mr-1" />
+                          {bug.file}{bug.line ? `:${bug.line}` : ''}
                         </p>
                       )}
-
-                      {bug.fix && (
-                        <div className="mt-4 pt-4 border-t border-[#262626]">
-                          <p className="text-xs text-[#a1a1aa] mb-2 uppercase tracking-wider">Suggested Fix</p>
-                          <div className="bg-[#0a0a0a] border border-[#262626] rounded-lg p-4 overflow-x-auto">
-                            <pre className="text-xs text-[#a1a1aa] font-mono whitespace-pre-wrap">
-                              <code>{bug.fix}</code>
-                            </pre>
-                          </div>
+                      {bug.recommendation && (
+                        <div className="mt-3 pt-3 border-t border-yellow-900/20">
+                          <p className="text-xs text-gray-400 mb-1">Recommendation:</p>
+                          <p className="text-sm text-gray-300">{bug.recommendation}</p>
                         </div>
                       )}
-
-                      {bug.recommendation && !bug.fix && (
-                        <div className="mt-4 pt-4 border-t border-[#262626]">
-                          <p className="text-xs text-[#a1a1aa] mb-2 uppercase tracking-wider">Recommendation</p>
-                          <p className="text-sm text-[#a1a1aa]">{bug.recommendation}</p>
-                        </div>
-                      )}
-                    </Card>
+                    </div>
                   ))}
+                </div>
+              </Card>
+            )}
 
-                  {/* Low Severity Bugs */}
+            {/* Low Severity Bugs */}
+            {bugsBySeverity.LOW.length > 0 && (
+              <Card className="border-blue-900/50">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-blue-400" />
+                  Low Severity Issues ({bugsBySeverity.LOW.length})
+                </h2>
+                <div className="space-y-4">
                   {bugsBySeverity.LOW.map((bug, index) => (
-                    <Card key={`low-${index}`} className="border-blue-500/20">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <FileCode className="w-4 h-4 text-[#a1a1aa]" />
-                            <span className="text-white font-medium text-sm">
-                              {bug.file || "Unknown File"}
-                              {bug.line && <span className="text-[#a1a1aa]">:{bug.line}</span>}
-                            </span>
-                          </div>
-                          <h3 className="text-white font-semibold mb-2">{bug.type || "Suggestion"}</h3>
-                        </div>
-                        <span className={getSeverityBadge("LOW")}>
+                    <div key={index} className="p-4 bg-[#0a0a0a] rounded-lg border border-blue-900/30">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-white font-medium">{bug.type || "Suggestion"}</h3>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold border ${getSeverityColor("LOW")}`}>
                           LOW
                         </span>
                       </div>
-                      
                       {bug.description && (
-                        <p className="text-[#a1a1aa] text-sm mb-4 leading-relaxed">
-                          {bug.description}
+                        <p className="text-gray-300 text-sm mb-2">{bug.description}</p>
+                      )}
+                      {bug.file && (
+                        <p className="text-gray-500 text-xs font-mono mb-1">
+                          <FileCode className="w-3 h-3 inline mr-1" />
+                          {bug.file}{bug.line ? `:${bug.line}` : ''}
                         </p>
                       )}
-
-                      {bug.fix && (
-                        <div className="mt-4 pt-4 border-t border-[#262626]">
-                          <p className="text-xs text-[#a1a1aa] mb-2 uppercase tracking-wider">Suggested Fix</p>
-                          <div className="bg-[#0a0a0a] border border-[#262626] rounded-lg p-4 overflow-x-auto">
-                            <pre className="text-xs text-[#a1a1aa] font-mono whitespace-pre-wrap">
-                              <code>{bug.fix}</code>
-                            </pre>
-                          </div>
+                      {bug.recommendation && (
+                        <div className="mt-3 pt-3 border-t border-blue-900/20">
+                          <p className="text-xs text-gray-400 mb-1">Recommendation:</p>
+                          <p className="text-sm text-gray-300">{bug.recommendation}</p>
                         </div>
                       )}
-
-                      {bug.recommendation && !bug.fix && (
-                        <div className="mt-4 pt-4 border-t border-[#262626]">
-                          <p className="text-xs text-[#a1a1aa] mb-2 uppercase tracking-wider">Recommendation</p>
-                          <p className="text-sm text-[#a1a1aa]">{bug.recommendation}</p>
-                        </div>
-                      )}
-                    </Card>
+                    </div>
                   ))}
                 </div>
-              )}
+              </Card>
+            )}
+          </>
+        ) : (
+          <Card>
+            <div className="text-center py-12">
+              <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-white mb-2">No Issues Found</h3>
+              <p className="text-gray-500 text-sm">
+                This pull request appears to be secure with no detected vulnerabilities.
+              </p>
             </div>
-          </div>
+          </Card>
+        )}
 
-        </div>
+        {/* Raw Data (for debugging) */}
+        <Card className="border-[#262626]">
+          <h2 className="text-lg font-semibold text-white mb-4">Raw Analysis Data</h2>
+          <pre className="text-xs text-gray-400 bg-[#0a0a0a] p-4 rounded-lg border border-[#262626] overflow-x-auto">
+            {JSON.stringify(analysis, null, 2)}
+          </pre>
+        </Card>
 
       </div>
     </div>
   );
 }
-
