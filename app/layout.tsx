@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from '@clerk/nextjs';
-import { dark } from '@clerk/themes'; // 👈 Enterprise Dark Mode
+import { Navbar } from "@/components/layout/Navbar";
+import { 
+  ClerkProvider, 
+} from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +28,11 @@ export default function RootLayout({
     >
       <html lang="en">
         <body className={`${inter.className} bg-[#0a0a0a] text-gray-100`}>
+          
+          {/* 👇 GLOBAL HEADER START */}
+          <Navbar />
+          {/* 👆 GLOBAL HEADER END */}
+
           {children}
         </body>
       </html>

@@ -15,6 +15,7 @@ model User {
   avatar         String?      // GitHub Avatar URL
   createdAt      DateTime     @default(now())
   
+  githubId       Int?
   repositories   Repository[]
 }
 
@@ -36,15 +37,20 @@ model Repository {
 
 // 📊 THE AUDIT REPORT
 model Analysis {
-  id             String     @id @default(uuid())
-  repoId         String
-  repository     Repository @relation(fields: [repoId], references: [id])
+  id          String     @id @default(cuid())
+  createdAt   DateTime   @default(now())
   
-  prNumber       Int
-  riskScore      Int
-  financialRisk  String
-  bugs           Json
-  tags           String[]
+  // Existing fields
+  riskScore   Int
+  bugs        Json       // The AI report
   
-  createdAt      DateTime   @default(now())
+  // 👇 NEW FIELDS (Add these)
+  status      String     @default("PENDING") // e.g. "SECURE", "VULNERABLE"
+  issuesFound Int        @default(0)         // Count of bugs found
+  
+  // Relations
+  repository  Repository @relation(fields: [repositoryId], references: [id])
+  repositoryId String
+  
+  prNumber    Int        // Ensure this matches exactly
 }

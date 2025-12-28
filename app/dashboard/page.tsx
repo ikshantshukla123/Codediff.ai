@@ -1,197 +1,142 @@
-import { PrismaClient } from '@prisma/client';
-import { 
-  ShieldAlert, 
-  CheckCircle2, 
-  DollarSign, 
-  Activity, 
-  Search,
-  ArrowUpRight 
-} from 'lucide-react';
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { PrismaClient } from "@prisma/client";
+import { redirect } from "next/navigation";
+import { Github, Plus, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { syncRepositoriesForUser } from "@/lib/github/client";
+
+// UI Components
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 const prisma = new PrismaClient();
 
-// Force fresh data on every reload
-export const dynamic = 'force-dynamic';
-
 export default async function Dashboard() {
-  // 1. Fetch Data
-  const analyses = await prisma.analysis.findMany({
-    orderBy: { createdAt: 'desc' },
+  // 1. Get Clerk User Data
+  const { userId } = await auth();
+  const user = await currentUser();
+
+  if (!userId || !user) redirect("/");
+
+  // 🛡️ SELF-HEALING MECHANISM 🛡️
+  // We check Clerk directly for the GitHub ID and force-save it to the DB.
+  // This fixes the "null" error permanently.
+  const githubAccount = user.externalAccounts.find((acc) => acc.provider === 'oauth_github');
+  // Clerk SDK uses providerUserId (camelCase) while webhook uses provider_user_id (snake_case)
+  const githubId = githubAccount && 'providerUserId' in githubAccount 
+    ? parseInt(String((githubAccount as { providerUserId?: string }).providerUserId || '0')) 
+    : null;
+
+  await prisma.user.upsert({
+    where: { id: userId },
+    update: {
+      email: user.emailAddresses[0].emailAddress,
+      name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username,
+      // 👇 Force update the GitHub ID every time you load the page
+      ...(githubId ? { githubId } : {}) 
+    },
+    create: {
+      id: userId,
+      email: user.emailAddresses[0].emailAddress,
+      name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username,
+      githubId: githubId
+    }
   });
 
-  // 2. Calculate Real Stats
-  const totalScans = analyses.length;
-  const criticalRisks = analyses.filter(a => a.riskScore > 70).length;
-  
-  // Calculate "Money Saved" (Mock logic: Risk Score * $5,000 per point of risk)
-  // Real logic would parse the "$15,000,000" string, but this is fine for demo
-  const totalRiskValue = analyses.reduce((acc, curr) => {
-    return acc + (curr.riskScore > 0 ? curr.riskScore * 12500 : 0);
-  }, 0);
+  // 2. Now fetch Repositories (The ID is guaranteed to be there now)
+  const repositories = await prisma.repository.findMany({
+    where: { userId: userId },
+    orderBy: { createdAt: "desc" },
+    include: { analyses: { take: 1, orderBy: { createdAt: 'desc' } } }
+  });
+
+  // 3. If user has GitHub connected but no repositories, trigger a sync in the background
+  if (githubId && repositories.length === 0) {
+    // Sync in background without blocking the page load
+    syncRepositoriesForUser(userId, githubId).catch(console.error);
+  }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 font-sans selection:bg-blue-500/30">
-      
-      {/* Top Navigation Bar */}
-      <nav className="border-b border-gray-800 bg-[#0a0a0a]/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <ShieldAlert className="text-white h-5 w-5" />
-            </div>
-            <span className="font-semibold text-lg tracking-tight">CodeDiff AI</span>
-            <span className="ml-2 px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 text-xs border border-gray-700">
-              Enterprise
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-gray-400">
-            <span className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              System Operational
-            </span>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-6 py-12">
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-200 p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* Header Section */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-semibold text-white mb-2">Security Overview</h1>
-          <p className="text-gray-400">Real-time audit logs and financial risk assessment.</p>
-        </div>
-
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          
-          {/* Card 1: Total Volume */}
-          <div className="bg-[#111] border border-gray-800 p-6 rounded-2xl hover:border-gray-700 transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 group-hover:bg-blue-500/20 transition-colors">
-                <Activity className="text-blue-500 h-6 w-6" />
-              </div>
-              <span className="text-xs font-medium text-gray-500 bg-gray-900 px-2 py-1 rounded border border-gray-800">
-                +12% vs last week
-              </span>
-            </div>
-            <p className="text-gray-400 text-sm font-medium">Total PRs Audited</p>
-            <h3 className="text-3xl font-bold text-white mt-1">{totalScans}</h3>
-          </div>
-
-          {/* Card 2: Critical Risks */}
-          <div className="bg-[#111] border border-gray-800 p-6 rounded-2xl hover:border-gray-700 transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/20 group-hover:bg-red-500/20 transition-colors">
-                <ShieldAlert className="text-red-500 h-6 w-6" />
-              </div>
-            </div>
-            <p className="text-gray-400 text-sm font-medium">Critical Risks Blocked</p>
-            <h3 className="text-3xl font-bold text-white mt-1">{criticalRisks}</h3>
-          </div>
-
-          {/* Card 3: Financial Impact */}
-          <div className="bg-[#111] border border-gray-800 p-6 rounded-2xl hover:border-gray-700 transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
-                <DollarSign className="text-emerald-500 h-6 w-6" />
-              </div>
-            </div>
-            <p className="text-gray-400 text-sm font-medium">Est. Liability Prevented</p>
-            <h3 className="text-3xl font-bold text-white mt-1">
-              ${(totalRiskValue / 1000000).toFixed(1)}M
-            </h3>
-          </div>
-
-        </div>
-
-        {/* Data Table */}
-        <div className="bg-[#111] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
-          <div className="p-6 border-b border-gray-800 flex justify-between items-center">
-            <h3 className="font-semibold text-lg">Audit History</h3>
-            <button className="text-sm text-gray-400 hover:text-white flex items-center gap-1">
-              View All <ArrowUpRight size={14} />
-            </button>
+        {/* Header */}
+        <div className="flex justify-between items-end border-b border-[#262626] pb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-white">Overview</h1>
+            <p className="text-gray-500 text-sm mt-1">Manage repositories and security posture.</p>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-900/50 text-gray-400 text-xs uppercase tracking-wider font-medium">
-                  <th className="p-5 border-b border-gray-800">Status</th>
-                  <th className="p-5 border-b border-gray-800">Repository</th>
-                  <th className="p-5 border-b border-gray-800">Risk Score</th>
-                  <th className="p-5 border-b border-gray-800">Financial Assessment</th>
-                  <th className="p-5 border-b border-gray-800 text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {analyses.map((scan) => (
-                  <tr key={scan.id} className="hover:bg-gray-900/50 transition-colors group">
-                    <td className="p-5">
-                      {scan.riskScore > 50 ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
-                          <ShieldAlert size={12} /> Blocked
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <CheckCircle2 size={12} /> Passed
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-5 font-medium text-white group-hover:text-blue-400 transition-colors">
-                      {scan.repoName} 
-                      <span className="text-gray-500 ml-2 font-normal">#{scan.prNumber}</span>
-                    </td>
-                    <td className="p-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-24 h-2 bg-gray-800 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full ${scan.riskScore > 50 ? 'bg-red-500' : 'bg-emerald-500'}`} 
-                            style={{ width: `${scan.riskScore}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-medium">{scan.riskScore}/100</span>
-                      </div>
-                    </td>
-                    <td className="p-5 text-gray-400 text-sm max-w-md truncate">
-                      {scan.financialRisk.includes("$") ? scan.financialRisk : "Analysis Pending..."}
-                    </td>
-                    <td className="p-5 text-right text-gray-500 text-sm tabular-nums">
-                      {new Date(scan.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="p-5 text-gray-400 text-sm max-w-md truncate">
-  {/* If the data looks like tags (no $ sign), render them as badges */}
-  {!scan.financialRisk.includes("$") ? (
-    <div className="flex gap-2">
-      {scan.financialRisk.split(', ').map((tag, i) => (
-        <span key={i} className="px-2 py-1 rounded text-xs border border-purple-500/20 bg-purple-500/10 text-purple-400">
-          {tag}
-        </span>
-      ))}
-    </div>
-  ) : (
-    // Fallback for old data or if Gemini wrote a price
-    scan.financialRisk
-  )}
-</td>
-                  </tr>
-                ))}
-                
-                {analyses.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="p-12 text-center text-gray-500">
-                      <div className="flex flex-col items-center gap-3">
-                        <Search className="h-8 w-8 opacity-20" />
-                        <p>No audits found yet. Waiting for Webhooks...</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Link href={process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || "#"}>
+            <Button icon={<Plus className="w-4 h-4" />}>Add Repository</Button>
+          </Link>
         </div>
-      </main>
+
+        {/* Empty State */}
+        {repositories.length === 0 ? (
+          <div className="border border-dashed border-[#262626] rounded-xl p-16 flex flex-col items-center justify-center text-center bg-[#0f0f0f]">
+            <div className="w-12 h-12 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4 border border-[#262626]">
+              <Github className="w-6 h-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">No repositories found</h3>
+            <p className="text-gray-500 max-w-sm mb-6 text-sm">
+              Connect your GitHub repositories to enable real-time security scanning.
+            </p>
+            <Link href={process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || "#"}>
+              <Button variant="primary">Connect GitHub</Button>
+            </Link>
+          </div>
+        ) : (
+          /* Repository Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {repositories.map((repo) => {
+              const lastScan = repo.analyses[0];
+              const riskScore = lastScan?.riskScore || 0;
+              const isHighRisk = riskScore > 70;
+
+              return (
+                <Card key={repo.id} className="hover:border-gray-600 transition-colors group">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-2">
+                      <Github className="w-4 h-4 text-gray-500" />
+                      <span className="font-medium text-white truncate max-w-[150px]">{repo.name}</span>
+                    </div>
+                    <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded border ${
+                      isHighRisk 
+                        ? "bg-red-950/30 text-red-400 border-red-900/50" 
+                        : "bg-emerald-950/30 text-emerald-400 border-emerald-900/50"
+                    }`}>
+                      {isHighRisk ? "Action Needed" : "Secure"}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                      <div className="text-sm text-gray-500">Security Score</div>
+                      <div className="text-2xl font-bold text-white">{100 - riskScore}</div>
+                    </div>
+                    <div className="h-1 w-full bg-[#262626] rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${isHighRisk ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                        style={{ width: `${100 - riskScore}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-[#262626] flex justify-between items-center">
+                    <span className="text-xs text-gray-600">
+                      {lastScan ? new Date(lastScan.createdAt).toLocaleDateString() : "No scans yet"}
+                    </span>
+                    <Link href={`/dashboard/${repo.id}`} className="text-white text-xs font-medium flex items-center gap-1 group-hover:underline">
+                      View Details <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
