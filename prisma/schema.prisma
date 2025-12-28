@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,14 +7,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// This is the "Shape" of our Audit Report
-model Analysis {
-  id             String   @id @default(uuid())
-  repoName       String
-  prNumber       Int
-  riskScore      Int      // We will calculate this (0-100)
-  financialRisk  String   // e.g. "$50,000"
-  bugs           Json     // We save the entire bug list here
-  createdAt      DateTime @default(now())
+// 👤 THE USER (Synced from Clerk)
+model User {
+  id             String       @id // Matches Clerk ID (user_2N...)
+  email          String       @unique
+  name           String?      // GitHub Name
+  avatar         String?      // GitHub Avatar URL
+  createdAt      DateTime     @default(now())
+  
+  repositories   Repository[]
 }
 
+// 📦 THE REPOSITORY
+model Repository {
+  id             String     @id @default(uuid())
+  githubRepoId   Int        // GitHub's ID (e.g., 123456)
+  name           String     // "owner/repo-name"
+  installationId Int        // Crucial for "Auto-Fix" write access
+  
+  userId         String
+  user           User       @relation(fields: [userId], references: [id])
+  
+  analyses       Analysis[]
+  createdAt      DateTime   @default(now())
+
+  @@unique([githubRepoId, userId])
+}
+
+// 📊 THE AUDIT REPORT
+model Analysis {
+  id             String     @id @default(uuid())
+  repoId         String
+  repository     Repository @relation(fields: [repoId], references: [id])
+  
+  prNumber       Int
+  riskScore      Int
+  financialRisk  String
+  bugs           Json
+  tags           String[]
+  
+  createdAt      DateTime   @default(now())
+}
