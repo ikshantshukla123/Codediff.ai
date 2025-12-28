@@ -1,13 +1,15 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { 
-  Shield, 
-  AlertTriangle, 
-  Zap, 
-  TrendingUp, 
-  Code, 
+import {
+  Shield,
+  AlertTriangle,
+  Zap,
+  TrendingUp,
+  Code,
   DollarSign,
   Lock,
   Brain,
@@ -17,10 +19,16 @@ import {
   Sparkles
 } from "lucide-react";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { userId } = await auth();
+
+  if (userId) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      
+
       {/* Hero Section */}
       <section className="relative border-b border-[#262626]">
         <div className="max-w-7xl mx-auto px-6 py-24 lg:py-32">
@@ -29,7 +37,7 @@ export default function HomePage() {
               <Sparkles className="w-4 h-4" />
               <span>AI-Powered Fintech Security Auditor</span>
             </div>
-            
+
             <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight">
               Don&apos;t Just Find Bugs.
               <br />
@@ -39,10 +47,10 @@ export default function HomePage() {
               <br />
               <span className="text-white">Auto-Fix Code.</span>
             </h1>
-            
+
             <p className="text-xl text-[#a1a1aa] max-w-2xl mx-auto leading-relaxed">
-              CodeDiff AI doesn&apos;t just tell you &quot;here&apos;s a bug.&quot; We prove financial vulnerabilities, 
-              predict architecture breaks, and automatically fix code. Making technical debt visible, 
+              CodeDiff AI doesn&apos;t just tell you &quot;here&apos;s a bug.&quot; We prove financial vulnerabilities,
+              predict architecture breaks, and automatically fix code. Making technical debt visible,
               predictable, and fixable.
             </p>
 
@@ -95,7 +103,7 @@ export default function HomePage() {
               The Fintech Security Problem
             </h2>
             <p className="text-lg text-[#a1a1aa]">
-              Current tools tell you what&apos;s wrong <span className="text-white">now</span>. 
+              Current tools tell you what&apos;s wrong <span className="text-white">now</span>.
               We predict what will break in <span className="text-white">3 months</span> and fix it automatically.
             </p>
           </div>
@@ -108,7 +116,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold text-white">Financial Leakage</h3>
                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                  Race conditions in payment processing can lead to double-spending. 
+                  Race conditions in payment processing can lead to double-spending.
                   A single bug could cost $10,000+ in financial losses.
                 </p>
               </div>
@@ -121,7 +129,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold text-white">Compliance Violations</h3>
                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                  Hardcoded API keys, unencrypted PII, and PCI-DSS violations can result in 
+                  Hardcoded API keys, unencrypted PII, and PCI-DSS violations can result in
                   massive regulatory fines and loss of customer trust.
                 </p>
               </div>
@@ -134,7 +142,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold text-white">Technical Debt</h3>
                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                  Architecture patterns that work today become distributed monoliths in 6 months. 
+                  Architecture patterns that work today become distributed monoliths in 6 months.
                   By then, it&apos;s too expensive to fix.
                 </p>
               </div>
@@ -167,8 +175,8 @@ export default function HomePage() {
                     <h3 className="text-2xl font-semibold text-white">Live Vulnerability Proving</h3>
                   </div>
                   <p className="text-[#a1a1aa] leading-relaxed">
-                    Not just detection—<span className="text-white">live exploit demonstration</span>. 
-                    We create isolated sandboxes, generate exploit payloads, and record proof of vulnerability. 
+                    Not just detection—<span className="text-white">live exploit demonstration</span>.
+                    We create isolated sandboxes, generate exploit payloads, and record proof of vulnerability.
                     See exactly how your code can be exploited before it&apos;s too late.
                   </p>
                   <ul className="space-y-2 text-sm text-[#a1a1aa]">
@@ -240,8 +248,8 @@ export default function HomePage() {
                     <h3 className="text-2xl font-semibold text-white">Predictive Architecture Oracle</h3>
                   </div>
                   <p className="text-[#a1a1aa] leading-relaxed">
-                    Predicts future problems <span className="text-white">before they happen</span>. 
-                    Analyzes your codebase against 1000+ OSS projects to identify patterns that lead to 
+                    Predicts future problems <span className="text-white">before they happen</span>.
+                    Analyzes your codebase against 1000+ OSS projects to identify patterns that lead to
                     architecture breaks. Get prevention roadmaps, not post-mortems.
                   </p>
                   <ul className="space-y-2 text-sm text-[#a1a1aa]">
@@ -273,8 +281,8 @@ export default function HomePage() {
                     <h3 className="text-2xl font-semibold text-white">Auto-Healing Pipeline</h3>
                   </div>
                   <p className="text-[#a1a1aa] leading-relaxed">
-                    Not just comments—<span className="text-white">actual fixes</span>. 
-                    We generate multiple fix candidates, test them in sandboxes, and create 
+                    Not just comments—<span className="text-white">actual fixes</span>.
+                    We generate multiple fix candidates, test them in sandboxes, and create
                     comprehensive fix PRs with tests, documentation, and rollback plans.
                   </p>
                   <ul className="space-y-2 text-sm text-[#a1a1aa]">
@@ -353,8 +361,8 @@ export default function HomePage() {
                     <h3 className="text-2xl font-semibold text-white">Codebase DNA Sequencer</h3>
                   </div>
                   <p className="text-[#a1a1aa] leading-relaxed">
-                    Genetic analysis of your codebase health. Extract unique fingerprints, 
-                    detect genetic defects, calculate evolutionary fitness, and predict breakpoints. 
+                    Genetic analysis of your codebase health. Extract unique fingerprints,
+                    detect genetic defects, calculate evolutionary fitness, and predict breakpoints.
                     Understand your codebase like never before.
                   </p>
                   <ul className="space-y-2 text-sm text-[#a1a1aa]">
@@ -439,10 +447,10 @@ export default function HomePage() {
                 <h2 className="text-3xl font-bold text-white">Automated PCI-DSS Auditor</h2>
               </div>
               <p className="text-lg text-[#a1a1aa] leading-relaxed">
-                CodeDiff AI is your automated compliance officer. We strictly flag any code that logs 
-                variables named <code className="text-white bg-[#1a1a1a] px-2 py-0.5 rounded">cvv</code>, 
-                <code className="text-white bg-[#1a1a1a] px-2 py-0.5 rounded">password</code>, 
-                <code className="text-white bg-[#1a1a1a] px-2 py-0.5 rounded">token</code>, or 
+                CodeDiff AI is your automated compliance officer. We strictly flag any code that logs
+                variables named <code className="text-white bg-[#1a1a1a] px-2 py-0.5 rounded">cvv</code>,
+                <code className="text-white bg-[#1a1a1a] px-2 py-0.5 rounded">password</code>,
+                <code className="text-white bg-[#1a1a1a] px-2 py-0.5 rounded">token</code>, or
                 <code className="text-white bg-[#1a1a1a] px-2 py-0.5 rounded">pan</code>.
               </p>
               <p className="text-[#a1a1aa] leading-relaxed">
@@ -517,7 +525,7 @@ export default function HomePage() {
             Ready to Make Your Codebase Secure?
           </h2>
           <p className="text-xl text-[#a1a1aa]">
-            Start detecting, proving, and fixing vulnerabilities in minutes. 
+            Start detecting, proving, and fixing vulnerabilities in minutes.
             No credit card required. 100% free to start.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">

@@ -5,13 +5,15 @@ import { ArrowLeft, ShieldAlert, CheckCircle, AlertTriangle, FileCode, Clock, Bu
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { SeverityPieChart } from "@/components/charts/SeverityPieChart";
+import { RiskTrendChart } from "@/components/charts/RiskTrendChart";
 
 const prisma = new PrismaClient();
 
-export default async function AnalysisDetailPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string; analysisId: string }> 
+export default async function AnalysisDetailPage({
+  params
+}: {
+  params: Promise<{ id: string; analysisId: string }>
 }) {
   const { userId } = await auth();
   const { id, analysisId } = await params;
@@ -34,9 +36,31 @@ export default async function AnalysisDetailPage({
 
   if (!analysis) return notFound();
 
+  // Fetch history for trend chart
+  const history = await prisma.analysis.findMany({
+    where: {
+      repositoryId: analysis.repositoryId
+    },
+    orderBy: {
+      createdAt: 'asc'
+    },
+    take: 10,
+    select: {
+      createdAt: true,
+      riskScore: true,
+      id: true
+    }
+  });
+
+  const trendData = history.map(h => ({
+    date: h.createdAt.toISOString(),
+    score: h.riskScore,
+    label: new Date(h.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  }));
+
   // Parse bugs from JSON
   const bugs = Array.isArray(analysis.bugs) ? analysis.bugs : [];
-  
+
   // Group bugs by severity
   const bugsBySeverity = {
     HIGH: bugs.filter((b: any) => b.severity === "HIGH"),
@@ -73,10 +97,10 @@ export default async function AnalysisDetailPage({
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-200 p-8">
       <div className="max-w-5xl mx-auto space-y-8">
-        
+
         {/* Back Button */}
-        <Link 
-          href={`/dashboard/${id}`} 
+        <Link
+          href={`/dashboard/${id}`}
           className="inline-flex items-center text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Repository
@@ -132,6 +156,16 @@ export default async function AnalysisDetailPage({
           </div>
         </div>
 
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SeverityPieChart
+            high={bugsBySeverity.HIGH.length}
+            medium={bugsBySeverity.MEDIUM.length}
+            low={bugsBySeverity.LOW.length}
+          />
+          <RiskTrendChart data={trendData} />
+        </div>
+
         {/* Analysis Metadata */}
         <Card>
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -170,12 +204,11 @@ export default async function AnalysisDetailPage({
                 <span className="text-2xl font-bold text-white">{analysis.riskScore}/100</span>
               </div>
               <div className="h-4 w-full bg-[#262626] rounded-full overflow-hidden">
-                <div 
-                  className={`h-full ${
-                    analysis.riskScore > 70 ? 'bg-red-500' : 
-                    analysis.riskScore > 40 ? 'bg-yellow-500' : 
-                    'bg-emerald-500'
-                  }`}
+                <div
+                  className={`h-full ${analysis.riskScore > 70 ? 'bg-red-500' :
+                      analysis.riskScore > 40 ? 'bg-yellow-500' :
+                        'bg-emerald-500'
+                    }`}
                   style={{ width: `${analysis.riskScore}%` }}
                 />
               </div>
@@ -183,11 +216,11 @@ export default async function AnalysisDetailPage({
             <div className="pt-4 border-t border-[#262626]">
               <p className="text-sm text-gray-400 mb-2">Interpretation</p>
               <p className="text-white text-sm">
-                {analysis.riskScore > 70 
+                {analysis.riskScore > 70
                   ? "⚠️ High risk detected. Immediate action required. Review all issues before merging."
                   : analysis.riskScore > 40
-                  ? "⚡ Moderate risk. Review issues and consider fixes before merging."
-                  : "✅ Low risk. Code appears secure. Proceed with caution."
+                    ? "⚡ Moderate risk. Review issues and consider fixes before merging."
+                    : "✅ Low risk. Code appears secure. Proceed with caution."
                 }
               </p>
             </div>
