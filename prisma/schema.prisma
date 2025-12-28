@@ -1,0 +1,22 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// This is the "Shape" of our Audit Report
+model Analysis {
+  id             String   @id @default(uuid())
+  repoName       String
+  prNumber       Int
+  riskScore      Int      // We will calculate this (0-100)
+  financialRisk  String   // e.g. "$50,000"
+  bugs           Json     // We save the entire bug list here
+  createdAt      DateTime @default(now())
+}
+
