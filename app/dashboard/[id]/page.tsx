@@ -1,17 +1,15 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { redirect, notFound } from "next/navigation";
-import { ArrowLeft, ShieldAlert, CheckCircle, FileCode } from "lucide-react";
+import { ArrowLeft, ShieldAlert, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/Button"; // Reusing your UI
-import { Card } from "@/components/ui/Card";     // Reusing your UI
+import { Card } from "@/components/ui/Card";
 
 const prisma = new PrismaClient();
 
-// Params are async in Next.js 15
 export default async function RepoDetails({ params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
-  const { id } = await params; // Await the params
+  const { id } = await params;
 
   if (!userId) redirect("/");
 
@@ -28,85 +26,167 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
     }
   });
 
-  if (!repo) return notFound(); // Show 404 if not found
+  if (!repo) return notFound();
+
+  // Calculate metrics
+  const currentRiskScore = repo.analyses[0]?.riskScore || 0;
+  const totalScans = repo.analyses.length;
+  const totalBugs = repo.analyses.reduce((sum, a) => sum + a.issuesFound, 0);
+
+  // GitHub URL
+  const githubUrl = `https://github.com/${repo.name}`;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-200 p-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         
         {/* Back Button */}
-        <Link href="/dashboard" className="inline-flex items-center text-gray-400 hover:text-white transition-colors text-sm">
+        <Link 
+          href="/dashboard" 
+          className="inline-flex items-center text-[#a1a1aa] hover:text-white transition-colors text-sm"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Overview
         </Link>
 
         {/* Header */}
         <div className="flex justify-between items-start border-b border-[#262626] pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">{repo.name}</h1>
-            <p className="text-gray-500 font-mono text-sm">ID: {repo.githubRepoId}</p>
-          </div>
-          <div className="text-right">
-             <div className="text-sm text-gray-500 mb-1">Total Scans</div>
-             <div className="text-2xl font-semibold text-white">{repo.analyses.length}</div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-semibold text-white">{repo.name}</h1>
+              <a 
+                href={githubUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-[#a1a1aa] hover:text-white transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+            <p className="text-[#a1a1aa] font-mono text-sm">Repository ID: {repo.githubRepoId}</p>
           </div>
         </div>
 
-        {/* Scan History List */}
+        {/* Metric Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <div className="space-y-1">
+              <p className="text-sm text-[#a1a1aa]">Current Risk Score</p>
+              <div className="flex items-baseline gap-2">
+                <p className={`text-3xl font-semibold ${
+                  currentRiskScore > 70 ? 'text-red-400' : 
+                  currentRiskScore > 40 ? 'text-yellow-400' : 
+                  'text-emerald-400'
+                }`}>
+                  {currentRiskScore}
+                </p>
+                <span className="text-sm text-[#a1a1aa]">/100</span>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="space-y-1">
+              <p className="text-sm text-[#a1a1aa]">Total Scans</p>
+              <p className="text-3xl font-semibold text-white">{totalScans}</p>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="space-y-1">
+              <p className="text-sm text-[#a1a1aa]">Bugs Found</p>
+              <p className="text-3xl font-semibold text-white">{totalBugs}</p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Scan History */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-white">Recent Security Audits</h2>
+          <h2 className="text-xl font-semibold text-white">Scan History</h2>
           
           {repo.analyses.length === 0 ? (
-            <div className="text-center py-12 bg-[#111] rounded-xl border border-[#262626] border-dashed">
-              <ShieldAlert className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-300">No audits found</h3>
-              <p className="text-gray-500 text-sm max-w-sm mx-auto mt-2">
-                Create a Pull Request in this repository to trigger the AI Auditor.
-              </p>
-            </div>
+            <Card className="border-dashed">
+              <div className="text-center py-12">
+                <ShieldAlert className="w-12 h-12 text-[#a1a1aa] mx-auto mb-3" />
+                <h3 className="text-lg font-medium text-white mb-2">No audits found</h3>
+                <p className="text-[#a1a1aa] text-sm max-w-sm mx-auto">
+                  Create a Pull Request in this repository to trigger the AI Auditor.
+                </p>
+              </div>
+            </Card>
           ) : (
-            repo.analyses.map((scan) => (
-              <Card key={scan.id} className="flex flex-col md:flex-row justify-between gap-6 hover:border-gray-600 transition-colors">
-                
-                {/* Left: Metadata */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <span className="bg-blue-900/30 text-blue-400 px-2 py-1 rounded text-xs font-mono border border-blue-900/50">
-                      PR #{scan.prId}
-                    </span>
-                    <span className="text-gray-400 text-sm">
-                      {new Date(scan.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="font-medium text-white">
-                    Status: <span className={scan.status === 'VULNERABLE' ? 'text-red-400' : 'text-emerald-400'}>
-                      {scan.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right: Score & Issues */}
-                <div className="flex items-center gap-8">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">Issues Found</div>
-                    <div className="text-xl font-bold text-white">{scan.issuesFound}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">Risk Score</div>
-                    <div className={`text-2xl font-bold ${
-                      scan.riskScore > 50 ? 'text-red-500' : 'text-emerald-500'
-                    }`}>
-                      {scan.riskScore}
-                    </div>
-                  </div>
-                  
-                  {/* Action Button (We will build this view later) */}
-                  <Button variant="outline" size="sm">
-                    View Report
-                  </Button>
-                </div>
-
-              </Card>
-            ))
+            <Card className="p-0 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[#262626]">
+                      <th className="text-left py-3 px-6 text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider">
+                        PR Number
+                      </th>
+                      <th className="text-left py-3 px-6 text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="text-left py-3 px-6 text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="text-right py-3 px-6 text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider">
+                        Risk Score
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {repo.analyses.map((scan) => {
+                      const isVulnerable = scan.status === 'VULNERABLE';
+                      const isWarning = scan.status === 'WARNING';
+                      
+                      return (
+                        <Link
+                          key={scan.id}
+                          href={`/dashboard/${repo.id}/scan/${scan.id}`}
+                          className="block"
+                        >
+                          <tr className="border-b border-[#262626] hover:bg-[#1a1a1a] transition-colors cursor-pointer">
+                            <td className="py-4 px-6">
+                              <span className="text-white font-mono text-sm">PR #{scan.prNumber}</span>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className="text-[#a1a1aa] text-sm">
+                                {new Date(scan.createdAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className={`text-xs font-semibold px-2 py-1 rounded border ${
+                                isVulnerable
+                                  ? "text-red-400 border-red-500/20 bg-red-500/10"
+                                  : isWarning
+                                  ? "text-yellow-400 border-yellow-500/20 bg-yellow-500/10"
+                                  : "text-emerald-400 border-emerald-500/20 bg-emerald-500/10"
+                              }`}>
+                                {scan.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-right">
+                              <span className={`text-sm font-semibold ${
+                                scan.riskScore > 70 ? 'text-red-400' : 
+                                scan.riskScore > 40 ? 'text-yellow-400' : 
+                                'text-emerald-400'
+                              }`}>
+                                {scan.riskScore}
+                              </span>
+                            </td>
+                          </tr>
+                        </Link>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           )}
         </div>
 

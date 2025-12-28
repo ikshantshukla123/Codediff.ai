@@ -6,7 +6,15 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function analyzePullRequest(data: any) {
+interface PullRequestData {
+  owner: string;
+  repo: string;
+  prNumber: number;
+  installationId: number;
+  diffUrl: string;
+}
+
+export async function analyzePullRequest(data: PullRequestData) {
   console.log(`🚀 Starting Advanced Ensemble Analysis for PR #${data.prNumber}...`);
 
   try {
@@ -22,28 +30,49 @@ export async function analyzePullRequest(data: any) {
     // Pass the categories to Gemini so it knows context
     console.log(`🏷️ Hugging Face tagged this as: ${categories.join(', ')}`);
     
+    // Add categories to the diff context for Gemini
+    const enrichedDiff = `Categories: ${categories.join(', ')}\n\n${diff}`;
+    
     // Gemini explains impact (using data from DeepSeek + HuggingFace)
     const finalReport = await explainImpactWithGemini(
-      { ...bugReport, categories }, // Combine data
-      diff
+      bugReport, // Pass bug report
+      enrichedDiff // Pass enriched diff with categories
     );
 
     // Calculate Risk Score
     const riskScore = Math.min(
       (bugReport.bugs.length * 10) + 
-      (bugReport.bugs.filter((b: any) => b.severity === "HIGH").length * 20), 
+      (bugReport.bugs.filter((b) => b.severity === "HIGH").length * 20), 
       100
     );
+
+    // Find the repository by name and installation ID
+    const repository = await prisma.repository.findFirst({
+      where: {
+        name: `${data.owner}/${data.repo}`,
+        installationId: data.installationId
+      }
+    });
+
+    if (!repository) {
+      console.error(`❌ Repository not found: ${data.owner}/${data.repo}`);
+      return;
+    }
+
+    // Determine status based on risk score
+    const status = riskScore > 70 ? "VULNERABLE" : riskScore > 40 ? "WARNING" : "SECURE";
+    const issuesFound = bugReport.bugs.length;
 
     // 💾 SAVE TO DATABASE
     console.log("💾 Saving Deep Analysis to NeonDB...");
     await prisma.analysis.create({
       data: {
-        repoName: data.repo,
+        repositoryId: repository.id,
         prNumber: data.prNumber,
         riskScore: riskScore,
-        financialRisk: categories.join(', '), // We'll save the Tags here for now to show on Dashboard
-        bugs: JSON.stringify(bugReport.bugs)
+        status: status,
+        issuesFound: issuesFound,
+        bugs: JSON.parse(JSON.stringify(bugReport.bugs)) // Store as JSON - ensure proper serialization
       }
     });
 
