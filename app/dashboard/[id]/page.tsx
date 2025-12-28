@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { ArrowLeft, ShieldAlert, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { ClickableRow } from "@/components/ui/ClickableRow";
 
 const prisma = new PrismaClient();
 
@@ -139,48 +140,46 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
                       const isWarning = scan.status === 'WARNING';
                       
                       return (
-                        <Link
+                        <ClickableRow
                           key={scan.id}
                           href={`/dashboard/${repo.id}/scan/${scan.id}`}
-                          className="block"
+                          className="border-b border-[#262626] hover:bg-[#1a1a1a] transition-colors"
                         >
-                          <tr className="border-b border-[#262626] hover:bg-[#1a1a1a] transition-colors cursor-pointer">
-                            <td className="py-4 px-6">
-                              <span className="text-white font-mono text-sm">PR #{scan.prNumber}</span>
-                            </td>
-                            <td className="py-4 px-6">
-                              <span className="text-[#a1a1aa] text-sm">
-                                {new Date(scan.createdAt).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            </td>
-                            <td className="py-4 px-6">
-                              <span className={`text-xs font-semibold px-2 py-1 rounded border ${
-                                isVulnerable
-                                  ? "text-red-400 border-red-500/20 bg-red-500/10"
-                                  : isWarning
-                                  ? "text-yellow-400 border-yellow-500/20 bg-yellow-500/10"
-                                  : "text-emerald-400 border-emerald-500/20 bg-emerald-500/10"
-                              }`}>
-                                {scan.status}
-                              </span>
-                            </td>
-                            <td className="py-4 px-6 text-right">
-                              <span className={`text-sm font-semibold ${
-                                scan.riskScore > 70 ? 'text-red-400' : 
-                                scan.riskScore > 40 ? 'text-yellow-400' : 
-                                'text-emerald-400'
-                              }`}>
-                                {scan.riskScore}
-                              </span>
-                            </td>
-                          </tr>
-                        </Link>
+                          <td className="py-4 px-6">
+                            <span className="text-white font-mono text-sm">PR #{scan.prNumber}</span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <span className="text-[#a1a1aa] text-sm">
+                              {new Date(scan.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <span className={`text-xs font-semibold px-2 py-1 rounded border ${
+                              isVulnerable
+                                ? "text-red-400 border-red-500/20 bg-red-500/10"
+                                : isWarning
+                                ? "text-yellow-400 border-yellow-500/20 bg-yellow-500/10"
+                                : "text-emerald-400 border-emerald-500/20 bg-emerald-500/10"
+                            }`}>
+                              {scan.status}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <span className={`text-sm font-semibold ${
+                              scan.riskScore > 70 ? 'text-red-400' : 
+                              scan.riskScore > 40 ? 'text-yellow-400' : 
+                              'text-emerald-400'
+                            }`}>
+                              {scan.riskScore}
+                            </span>
+                          </td>
+                        </ClickableRow>
                       );
                     })}
                   </tbody>
