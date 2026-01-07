@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SeverityPieChart } from "@/components/charts/SeverityPieChart";
 import { RiskTrendChart } from "@/components/charts/RiskTrendChart";
+import { FinancialRiskTimeline } from "@/components/charts/FinancialRiskTimeline";
+import { RiskCostMatrix } from "@/components/charts/RiskCostMatrix";
+import { VulnerabilityHeatmap } from "@/components/charts/VulnerabilityHeatmap";
+import { ComplianceGauge } from "@/components/charts/ComplianceGauge";
 import { prisma } from "@/lib/prisma";
 
 export default async function AnalysisDetailPage({
@@ -154,14 +158,33 @@ export default async function AnalysisDetailPage({
           </div>
         </div>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <SeverityPieChart
-            high={bugsBySeverity.HIGH.length}
-            medium={bugsBySeverity.MEDIUM.length}
-            low={bugsBySeverity.LOW.length}
-          />
-          <RiskTrendChart data={trendData} />
+        {/* Financial Impact Visualizations */}
+        <div className="space-y-6">
+          {/* Priority 1: Financial Risk Timeline */}
+          <FinancialRiskTimeline />
+
+          {/* Priority 2 & 3: Risk Analysis Matrix */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RiskCostMatrix />
+            <ComplianceGauge />
+          </div>
+
+          {/* Additional Professional Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <VulnerabilityHeatmap />
+            <Card className="bg-[#101010] border-[#1f1f1f] p-4">
+              <SeverityPieChart
+                high={bugsBySeverity.HIGH.length}
+                medium={bugsBySeverity.MEDIUM.length}
+                low={bugsBySeverity.LOW.length}
+              />
+            </Card>
+          </div>
+
+          {/* Historical Trend */}
+          <Card className="bg-[#101010] border-[#1f1f1f] p-4">
+            <RiskTrendChart data={trendData} />
+          </Card>
         </div>
 
         {/* Analysis Metadata */}

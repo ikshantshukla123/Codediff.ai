@@ -1,4 +1,7 @@
+"use client";
+
 import React from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 interface SeverityPieChartProps {
   high: number;
@@ -7,108 +10,71 @@ interface SeverityPieChartProps {
 }
 
 export function SeverityPieChart({ high, medium, low }: SeverityPieChartProps) {
+  const data = [
+    { name: 'High', value: high, color: '#ef4444' },   // red-500
+    { name: 'Medium', value: medium, color: '#eab308' }, // yellow-500
+    { name: 'Low', value: low, color: '#3b82f6' },    // blue-500
+  ].filter(item => item.value > 0);
+
   const total = high + medium + low;
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const center = 50;
 
   if (total === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 bg-[#111111] rounded-xl border border-[#262626]">
+      <div className="flex flex-col items-center justify-center p-6 h-64 bg-[#111111] rounded-xl border border-[#262626]">
+        <h3 className="text-lg font-semibold text-white mb-2">Severity Distribution</h3>
         <p className="text-gray-500">No issues found</p>
       </div>
     );
   }
 
-  const highPercent = high / total;
-  const mediumPercent = medium / total;
-  const lowPercent = low / total;
-
-  const highOffset = 0;
-  const mediumOffset = -circumference * highPercent;
-  const lowOffset = -circumference * (highPercent + mediumPercent);
-
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-[#111111] rounded-xl border border-[#262626]">
-      <h3 className="text-lg font-semibold text-white mb-6">Severity Distribution</h3>
-      <div className="relative w-48 h-48">
-        <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
-          {/* Background Circle */}
-          <circle
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="transparent"
-            stroke="#262626"
-            strokeWidth="12"
-          />
+    <div className="flex flex-col h-full bg-[#111111] rounded-xl border border-[#262626] p-4">
+      <h3 className="text-lg font-semibold text-white mb-1">Severity Distribution</h3>
+      <p className="text-xs text-gray-400 mb-4">Breakdown of issues by severity level</p>
 
-          {/* High Severity Segment */}
-          {high > 0 && (
-            <circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="transparent"
-              stroke="#ef4444" // red-500
-              strokeWidth="12"
-              strokeDasharray={`${circumference * highPercent} ${circumference}`}
-              strokeDashoffset={highOffset}
-              className="transition-all duration-1000 ease-out"
+      <div className="flex-1 min-h-[280px] relative">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={55}
+              outerRadius={75}
+              paddingAngle={5}
+              dataKey="value"
+              stroke="none"
+              cornerRadius={5}
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value: number) => [value, 'Issues']}
+              contentStyle={{
+                backgroundColor: '#1a1a1a',
+                border: '1px solid #333',
+                borderRadius: '8px',
+                color: '#fff'
+              }}
+              itemStyle={{ color: '#fff' }}
             />
-          )}
-
-          {/* Medium Severity Segment */}
-          {medium > 0 && (
-            <circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="transparent"
-              stroke="#eab308" // yellow-500
-              strokeWidth="12"
-              strokeDasharray={`${circumference * mediumPercent} ${circumference}`}
-              strokeDashoffset={mediumOffset}
-              className="transition-all duration-1000 ease-out"
+            <Legend
+              verticalAlign="bottom"
+              height={32}
+              iconType="circle"
+              formatter={(value, entry: any) => (
+                <span className="text-gray-300 ml-1 text-sm">{value}</span>
+              )}
             />
-          )}
+          </PieChart>
+        </ResponsiveContainer>
 
-          {/* Low Severity Segment */}
-          {low > 0 && (
-            <circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="transparent"
-              stroke="#3b82f6" // blue-500
-              strokeWidth="12"
-              strokeDasharray={`${circumference * lowPercent} ${circumference}`}
-              strokeDashoffset={lowOffset}
-              className="transition-all duration-1000 ease-out"
-            />
-          )}
-        </svg>
-
-        {/* Center Text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {/* Center Text for Donut Chart */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-6">
           <span className="text-3xl font-bold text-white">{total}</span>
-          <span className="text-xs text-gray-500 uppercase tracking-wider">Issues</span>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex gap-4 mt-6">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
-          <span className="text-sm text-gray-400">High ({high})</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-yellow-500" />
-          <span className="text-sm text-gray-400">Med ({medium})</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500" />
-          <span className="text-sm text-gray-400">Low ({low})</span>
+          <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">Total</span>
         </div>
       </div>
     </div>

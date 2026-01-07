@@ -2,6 +2,11 @@
 
 import { Card } from "@/components/ui/Card";
 import { BarChart3, TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { FinancialRiskTimeline } from "@/components/charts/FinancialRiskTimeline";
+import { RiskCostMatrix } from "@/components/charts/RiskCostMatrix";
+import { VulnerabilityHeatmap } from "@/components/charts/VulnerabilityHeatmap";
+import { ComplianceGauge } from "@/components/charts/ComplianceGauge";
+import { TeamPerformanceRadar } from "@/components/charts/TeamPerformanceRadar";
 import { useState } from "react";
 
 export default function AnalyticsPage() {
@@ -21,8 +26,8 @@ export default function AnalyticsPage() {
                 key={t}
                 onClick={() => setTimeframe(t)}
                 className={`px-4 py-2 rounded text-sm font-medium ${timeframe === t
-                    ? "bg-blue-900/50 text-white border border-blue-700"
-                    : "bg-gray-900 text-gray-400 hover:text-white border border-gray-800"
+                  ? "bg-blue-900/50 text-white border border-blue-700"
+                  : "bg-gray-900 text-gray-400 hover:text-white border border-gray-800"
                   }`}
               >
                 {t}
@@ -88,30 +93,23 @@ export default function AnalyticsPage() {
           </Card>
         </div>
 
-        <Card className="border-gray-800">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Predictive Analytics Dashboard</h3>
-            <p className="text-gray-400 mb-4">
-              This dashboard will soon include predictive analytics that forecast future
-              architecture breaks, technical debt accumulation, and security vulnerabilities
-              before they happen.
-            </p>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-900/50 rounded border border-gray-800">
-                <span className="text-gray-300">Architecture break prediction</span>
-                <span className="text-yellow-400 text-sm font-medium">Coming soon</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-900/50 rounded border border-gray-800">
-                <span className="text-gray-300">Technical debt forecasting</span>
-                <span className="text-yellow-400 text-sm font-medium">Coming soon</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-900/50 rounded border border-gray-800">
-                <span className="text-gray-300">Team performance analytics</span>
-                <span className="text-yellow-400 text-sm font-medium">Coming soon</span>
-              </div>
-            </div>
+        {/* Priority Financial Impact Charts for Hackathon */}
+        <div className="space-y-8">
+          {/* Priority 1: Financial Risk Timeline - Shows your innovation */}
+          <FinancialRiskTimeline />
+
+          {/* Priority 2 & 3: Business Impact Matrix */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RiskCostMatrix />
+            <ComplianceGauge />
           </div>
-        </Card>
+
+          {/* Additional Professional Visualizations */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <VulnerabilityHeatmap />
+            <TeamPerformanceRadar />
+          </div>
+        </div>
       </div>
     </div>
   );
