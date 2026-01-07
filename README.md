@@ -3,7 +3,7 @@ DeepSeek V3,The Auditor (Logic),"It looks at the Code Diff only. It finds the bu
 Gemini 1.5 Flash,The Manager (Context),It looks at the DeepSeek Report + File Context. It explains the Impact.,It has a massive context window (1M tokens). It can read the surrounding files to tell you why that bug matters financially.
 
 
-
+live link : codediffai.vercel.app
 # Push your branch to GitHub first
 git push origin feature-database
 
