@@ -1,22 +1,33 @@
 "use client";
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from 'recharts';
 
-const data = [
+const defaultData = [
   { month: 'Jan', internalScore: 85, financialRisk: 92, potentialLoss: 25000 },
   { month: 'Feb', internalScore: 78, financialRisk: 88, potentialLoss: 42000 },
   { month: 'Mar', internalScore: 72, financialRisk: 85, potentialLoss: 38000 },
-  { month: 'Apr', internalScore: 65, financialRisk: 95, potentialLoss: 85000 }, // ⚠️ Critical month
-  { month: 'May', internalScore: 82, financialRisk: 70, potentialLoss: 15000 }, // After fixes
+  { month: 'Apr', internalScore: 65, financialRisk: 95, potentialLoss: 85000 },
+  { month: 'May', internalScore: 82, financialRisk: 70, potentialLoss: 15000 },
   { month: 'Jun', internalScore: 90, financialRisk: 65, potentialLoss: 8000 },
 ];
 
-export function FinancialRiskTimeline() {
+interface FinancialRiskTimelineProps {
+  data?: Array<{
+    month: string;
+    financialRisk: number;
+    internalScore: number;
+    potentialLoss: number;
+  }>;
+}
+
+export function FinancialRiskTimeline({ data = defaultData }: FinancialRiskTimelineProps) {
+  const latest = data[data.length - 1];
+
   return (
     <div className="h-[32rem] p-4 bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-xl border border-gray-800">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-white mb-1">💰 Financial Risk Over Time</h3>
+          <h3 className="text-lg font-bold text-white mb-1">💰 Financial Risk Timeline</h3>
           <p className="text-xs text-gray-400">Context-aware scoring shows business impact</p>
         </div>
         <div className="flex items-center gap-4 text-xs">
@@ -65,9 +76,9 @@ export function FinancialRiskTimeline() {
             }}
           />
           <Tooltip
-            formatter={(value: number, name: string) => {
-              if (name === 'potentialLoss') return [`$${value.toLocaleString()}`, 'Potential Loss'];
-              return [value, name === 'financialRisk' ? 'Financial Risk' : 'Technical Score'];
+            formatter={(value: any, name: any) => {
+              if (name === 'potentialLoss') return [`$${value?.toLocaleString() ?? '0'}`, 'Potential Loss'];
+              return [value ?? 0, name === 'financialRisk' ? 'Financial Risk' : 'Technical Score'];
             }}
             labelStyle={{ color: '#fff', fontSize: '12px', fontWeight: '600' }}
             contentStyle={{
@@ -79,7 +90,6 @@ export function FinancialRiskTimeline() {
             }}
           />
 
-          {/* Background area for Financial Risk */}
           <Area
             type="monotone"
             dataKey="financialRisk"
@@ -87,7 +97,6 @@ export function FinancialRiskTimeline() {
             stroke="none"
           />
 
-          {/* Financial Risk Line (Red) */}
           <Line
             type="monotone"
             dataKey="financialRisk"
@@ -98,7 +107,6 @@ export function FinancialRiskTimeline() {
             filter="drop-shadow(0 4px 6px rgba(239, 68, 68, 0.3))"
           />
 
-          {/* Technical Score Line (Blue) */}
           <Line
             type="monotone"
             dataKey="internalScore"
@@ -111,26 +119,18 @@ export function FinancialRiskTimeline() {
         </LineChart>
       </ResponsiveContainer>
 
-      {/* Critical Month Annotation */}
-      <div className="flex justify-center mt-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-red-900/40 to-red-800/30 border border-red-700/50 rounded-lg backdrop-blur-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-red-300">🚨 April Critical Event:</span>
-            <span className="text-xs text-red-400">SQL Injection in Payment System</span>
-          </div>
-          <div className="h-3 w-px bg-red-600/50"></div>
-          <span className="text-xs font-bold text-red-400">$85,000 potential loss</span>
-        </div>
-      </div>
-
       {/* Bottom metrics */}
       <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-gray-700/50">
         <div className="text-center">
-          <div className="text-xl font-bold text-emerald-400">$178K</div>
+          <div className="text-xl font-bold text-emerald-400">
+            ${Math.round(data.reduce((sum, d) => sum + d.potentialLoss, 0)).toLocaleString()}
+          </div>
           <div className="text-xs text-gray-400 font-medium">Total Risk Prevented</div>
         </div>
         <div className="text-center">
-          <div className="text-xl font-bold text-blue-400">73%</div>
+          <div className="text-xl font-bold text-blue-400">
+            {Math.round(data.reduce((sum, d) => sum + d.internalScore, 0) / data.length)}%
+          </div>
           <div className="text-xs text-gray-400 font-medium">Avg Security Score</div>
         </div>
         <div className="text-center">

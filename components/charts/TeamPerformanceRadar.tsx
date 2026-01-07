@@ -144,8 +144,8 @@ export function TeamPerformanceRadar() {
                     <p className="font-bold text-white text-sm">{label}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`px-2 py-0.5 rounded text-xs font-semibold ${item?.priority === 'HIGH' ? 'bg-red-900/50 text-red-300' :
-                          item?.priority === 'MEDIUM' ? 'bg-yellow-900/50 text-yellow-300' :
-                            'bg-green-900/50 text-green-300'
+                        item?.priority === 'MEDIUM' ? 'bg-yellow-900/50 text-yellow-300' :
+                          'bg-green-900/50 text-green-300'
                         }`}>
                         {item?.priority} Priority
                       </span>
@@ -171,10 +171,10 @@ export function TeamPerformanceRadar() {
                     </div>
                     <div className="flex justify-between items-center pt-1 border-t border-gray-700">
                       <span className="text-gray-400">Gap to Target:</span>
-                      <span className={`font-bold ${(targetData?.value || 0) - (currentData?.value || 0) > 0 ? 'text-orange-400' : 'text-emerald-400'
+                      <span className={`font-bold ${Number(targetData?.value || 0) - Number(currentData?.value || 0) > 0 ? 'text-orange-400' : 'text-emerald-400'
                         }`}>
-                        {((targetData?.value || 0) - (currentData?.value || 0) > 0 ? '+' : '')}
-                        {(targetData?.value || 0) - (currentData?.value || 0)}%
+                        {Number(targetData?.value || 0) - Number(currentData?.value || 0) > 0 ? '+' : ''}
+                        {Math.abs(Number(targetData?.value || 0) - Number(currentData?.value || 0))}%
                       </span>
                     </div>
                   </div>

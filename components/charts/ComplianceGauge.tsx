@@ -66,15 +66,13 @@ export function ComplianceGauge() {
               endAngle={450}
             >
               <RadialBar
-                minAngle={15}
                 label={{ position: 'insideStart', fill: '#fff', fontSize: 10 }}
                 background
-                clockWise
                 dataKey="score"
                 cornerRadius={10}
               />
               <Tooltip
-                formatter={(value: number, name: string) => [`${value}%`, 'Compliance Score']}
+                formatter={(value: any, name: any) => [`${value ?? 0}%`, 'Compliance Score']}
                 labelFormatter={(label) => {
                   const item = data.find(d => d.name === label);
                   return item ? item.description : label;
@@ -124,8 +122,8 @@ export function ComplianceGauge() {
                   {item.compliant}/{item.requirements} requirements met
                 </span>
                 <span className={`font-semibold ${item.score >= 90 ? 'text-emerald-400' :
-                    item.score >= 80 ? 'text-blue-400' :
-                      item.score >= 70 ? 'text-yellow-400' : 'text-red-400'
+                  item.score >= 80 ? 'text-blue-400' :
+                    item.score >= 70 ? 'text-yellow-400' : 'text-red-400'
                   }`}>
                   {item.score >= 90 ? 'Excellent' :
                     item.score >= 80 ? 'Good' :
