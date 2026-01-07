@@ -1,12 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
 import { redirect, notFound } from "next/navigation";
 import { ArrowLeft, ShieldAlert, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { ClickableRow } from "@/components/ui/ClickableRow";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export default async function RepoDetails({ params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
@@ -16,7 +14,7 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
 
   // 1. Fetch the Repo & Its Analyses
   const repo = await prisma.repository.findUnique({
-    where: { 
+    where: {
       id: id,
       userId: userId // Security: Ensure this user owns the repo
     },
@@ -40,10 +38,10 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        
+
         {/* Back Button */}
-        <Link 
-          href="/dashboard" 
+        <Link
+          href="/dashboard"
           className="inline-flex items-center text-[#a1a1aa] hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Overview
@@ -54,9 +52,9 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-semibold text-white">{repo.name}</h1>
-              <a 
-                href={githubUrl} 
-                target="_blank" 
+              <a
+                href={githubUrl}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#a1a1aa] hover:text-white transition-colors"
               >
@@ -73,11 +71,10 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
             <div className="space-y-1">
               <p className="text-sm text-[#a1a1aa]">Current Risk Score</p>
               <div className="flex items-baseline gap-2">
-                <p className={`text-3xl font-semibold ${
-                  currentRiskScore > 70 ? 'text-red-400' : 
-                  currentRiskScore > 40 ? 'text-yellow-400' : 
-                  'text-emerald-400'
-                }`}>
+                <p className={`text-3xl font-semibold ${currentRiskScore > 70 ? 'text-red-400' :
+                    currentRiskScore > 40 ? 'text-yellow-400' :
+                      'text-emerald-400'
+                  }`}>
                   {currentRiskScore}
                 </p>
                 <span className="text-sm text-[#a1a1aa]">/100</span>
@@ -103,7 +100,7 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
         {/* Scan History */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-white">Scan History</h2>
-          
+
           {repo.analyses.length === 0 ? (
             <Card className="border-dashed">
               <div className="text-center py-12">
@@ -138,7 +135,7 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
                     {repo.analyses.map((scan) => {
                       const isVulnerable = scan.status === 'VULNERABLE';
                       const isWarning = scan.status === 'WARNING';
-                      
+
                       return (
                         <ClickableRow
                           key={scan.id}
@@ -160,22 +157,20 @@ export default async function RepoDetails({ params }: { params: Promise<{ id: st
                             </span>
                           </td>
                           <td className="py-4 px-6">
-                            <span className={`text-xs font-semibold px-2 py-1 rounded border ${
-                              isVulnerable
+                            <span className={`text-xs font-semibold px-2 py-1 rounded border ${isVulnerable
                                 ? "text-red-400 border-red-500/20 bg-red-500/10"
                                 : isWarning
-                                ? "text-yellow-400 border-yellow-500/20 bg-yellow-500/10"
-                                : "text-emerald-400 border-emerald-500/20 bg-emerald-500/10"
-                            }`}>
+                                  ? "text-yellow-400 border-yellow-500/20 bg-yellow-500/10"
+                                  : "text-emerald-400 border-emerald-500/20 bg-emerald-500/10"
+                              }`}>
                               {scan.status}
                             </span>
                           </td>
                           <td className="py-4 px-6 text-right">
-                            <span className={`text-sm font-semibold ${
-                              scan.riskScore > 70 ? 'text-red-400' : 
-                              scan.riskScore > 40 ? 'text-yellow-400' : 
-                              'text-emerald-400'
-                            }`}>
+                            <span className={`text-sm font-semibold ${scan.riskScore > 70 ? 'text-red-400' :
+                                scan.riskScore > 40 ? 'text-yellow-400' :
+                                  'text-emerald-400'
+                              }`}>
                               {scan.riskScore}
                             </span>
                           </td>

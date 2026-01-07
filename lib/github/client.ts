@@ -1,8 +1,6 @@
 import { Octokit } from "octokit";
 import { createAppAuth } from "@octokit/auth-app";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from '../prisma';
 
 // Helper to get an authenticated client for a specific installation
 function getClient(installationId: number) {
@@ -31,10 +29,10 @@ function getAppClient() {
 export async function syncRepositoriesForUser(userId: string, githubId: number) {
   try {
     const appClient = getAppClient();
-    
+
     // Get all installations for the app
     const { data: installations } = await appClient.rest.apps.listInstallations();
-    
+
     // Find installations that belong to this user (by matching account ID)
     const userInstallations = installations.filter(
       (installation) => installation.account?.id === githubId
@@ -51,11 +49,11 @@ export async function syncRepositoriesForUser(userId: string, githubId: number) 
     for (const installation of userInstallations) {
       const installationId = installation.id;
       const client = getClient(installationId);
-      
+
       try {
         // Get all repositories for this installation
         const { data: repos } = await client.rest.apps.listReposAccessibleToInstallation();
-        
+
         for (const repo of repos.repositories) {
           try {
             await prisma.repository.upsert({

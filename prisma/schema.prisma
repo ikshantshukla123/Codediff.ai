@@ -4,53 +4,40 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url= env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
-// 👤 THE USER (Synced from Clerk)
 model User {
-  id             String       @id // Matches Clerk ID (user_2N...)
-  email          String       @unique
-  name           String?      // GitHub Name
-  avatar         String?      // GitHub Avatar URL
-  createdAt      DateTime     @default(now())
-  
-  githubId       Int?
-  repositories   Repository[]
+  id           String       @id
+  email        String       @unique
+  name         String?
+  avatar       String?
+  createdAt    DateTime     @default(now())
+  githubId     Int?
+  repositories Repository[]
 }
 
-// 📦 THE REPOSITORY
 model Repository {
   id             String     @id @default(uuid())
-  githubRepoId   Int        // GitHub's ID (e.g., 123456)
-  name           String     // "owner/repo-name"
-  installationId Int        // Crucial for "Auto-Fix" write access
-  
+  githubRepoId   Int
+  name           String
+  installationId Int
   userId         String
-  user           User       @relation(fields: [userId], references: [id])
-  
-  analyses       Analysis[]
   createdAt      DateTime   @default(now())
+  analyses       Analysis[]
+  user           User       @relation(fields: [userId], references: [id])
 
   @@unique([githubRepoId, userId])
 }
 
-// 📊 THE AUDIT REPORT
 model Analysis {
-  id          String     @id @default(cuid())
-  createdAt   DateTime   @default(now())
-  
-  // Existing fields
-  riskScore   Int
-  bugs        Json       // The AI report
-  
-  // 👇 NEW FIELDS (Add these)
-  status      String     @default("PENDING") // e.g. "SECURE", "VULNERABLE"
-  issuesFound Int        @default(0)         // Count of bugs found
-  
-  // Relations
-  repository  Repository @relation(fields: [repositoryId], references: [id])
+  id           String     @id @default(cuid())
+  prNumber     Int
+  riskScore    Int
+  bugs         Json
+  createdAt    DateTime   @default(now())
+  issuesFound  Int        @default(0)
   repositoryId String
-  
-  prNumber    Int        // Ensure this matches exactly
+  status       String     @default("PENDING")
+  repository   Repository @relation(fields: [repositoryId], references: [id])
 }

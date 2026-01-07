@@ -1,14 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
 import { redirect, notFound } from "next/navigation";
-import { ArrowLeft, ShieldAlert, CheckCircle, AlertTriangle, FileCode, Clock, Bug } from "lucide-react";
+import { ArrowLeft, ShieldAlert, CheckCircle, AlertTriangle, FileCode, Clock, Bug, Brain, TrendingUp, PieChart, CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SeverityPieChart } from "@/components/charts/SeverityPieChart";
 import { RiskTrendChart } from "@/components/charts/RiskTrendChart";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export default async function AnalysisDetailPage({
   params
@@ -206,8 +204,8 @@ export default async function AnalysisDetailPage({
               <div className="h-4 w-full bg-[#262626] rounded-full overflow-hidden">
                 <div
                   className={`h-full ${analysis.riskScore > 70 ? 'bg-red-500' :
-                      analysis.riskScore > 40 ? 'bg-yellow-500' :
-                        'bg-emerald-500'
+                    analysis.riskScore > 40 ? 'bg-yellow-500' :
+                      'bg-emerald-500'
                     }`}
                   style={{ width: `${analysis.riskScore}%` }}
                 />

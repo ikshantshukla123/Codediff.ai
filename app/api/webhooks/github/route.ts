@@ -1,14 +1,12 @@
 import { headers } from 'next/headers';
 import { verifySignature } from '@/lib/github/utils';
 import { analyzePullRequest } from '@/lib/ai/orchestrator';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   const body = await req.text();
   const headersList = await headers(); // Your fix for Next.js 15 is correct ✅
-  
+
   const signature = headersList.get('x-hub-signature-256');
   const event = headersList.get('x-github-event');
 
@@ -22,7 +20,7 @@ export async function POST(req: Request) {
   // This runs when user clicks "Install" on GitHub
   if (event === 'installation' || event === 'installation_repositories') {
     const action = payload.action;
-    
+
     // Support both "New Install" and "Adding Repos to existing Install"
     if (action === 'created' || action === 'added') {
       const repositories = payload.repositories || payload.repositories_added;
@@ -48,7 +46,7 @@ export async function POST(req: Request) {
           await prisma.repository.upsert({
             where: {
               // We defined this @@unique constraint in schema
-              githubRepoId_userId: { 
+              githubRepoId_userId: {
                 githubRepoId: repo.id,
                 userId: user.id
               }
@@ -86,7 +84,7 @@ export async function POST(req: Request) {
 
       // Trigger AI
       analyzePullRequest(prData).catch(console.error);
-      
+
       return new Response('Analysis Queued', { status: 202 });
     }
   }

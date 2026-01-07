@@ -2,9 +2,7 @@ import { findBugsWithOpenRouter } from './providers/openrouter';
 import { explainImpactWithGemini } from './providers/gemini';
 import { classifyPRWithHuggingFace } from './providers/huggingface'; // 👈 NEW
 import { getDiffContent, postComment } from '@/lib/github/client';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../prisma';
 
 interface PullRequestData {
   owner: string;
@@ -19,20 +17,20 @@ export async function analyzePullRequest(data: PullRequestData) {
   try {
     // 1. Fetch Diff & Run AI
     const diff = await getDiffContent(data.diffUrl, data.installationId);
-    
+
     const [bugReport, categories] = await Promise.all([
       findBugsWithOpenRouter(diff),
       classifyPRWithHuggingFace(diff)
     ]);
 
     console.log(`🏷️ Categories: ${categories.join(', ')}`);
-    
+
     const enrichedDiff = `Categories: ${categories.join(', ')}\n\n${diff}`;
     const finalReport = await explainImpactWithGemini(bugReport, enrichedDiff);
 
     const riskScore = Math.min(
-      (bugReport.bugs.length * 10) + 
-      (bugReport.bugs.filter((b: any) => b.severity === "HIGH").length * 20), 
+      (bugReport.bugs.length * 10) +
+      (bugReport.bugs.filter((b: any) => b.severity === "HIGH").length * 20),
       100
     );
     const status = riskScore > 70 ? "VULNERABLE" : riskScore > 40 ? "WARNING" : "SECURE";
@@ -40,7 +38,7 @@ export async function analyzePullRequest(data: PullRequestData) {
     // 🔍 2. ROBUST DATABASE LOOKUP (THE FIX)
     // We search by name ONLY first, ignoring case sensitivity.
     console.log(`🔍 Looking for repo "${data.owner}/${data.repo}" in DB...`);
-    
+
     const repository = await prisma.repository.findFirst({
       where: {
         name: {
@@ -66,8 +64,8 @@ export async function analyzePullRequest(data: PullRequestData) {
     }
 
     // 💾 3. SAVE TO DATABASE
-console.log(`💾 Saving Analysis (Risk: ${riskScore}, Bugs: ${bugReport.bugs.length})...`);
-    
+    console.log(`💾 Saving Analysis (Risk: ${riskScore}, Bugs: ${bugReport.bugs.length})...`);
+
     // SANITIZATION: Clean the bugs array to ensure it's valid JSON for Postgres
     const cleanBugs = bugReport.bugs.map((b: any) => ({
       type: b.type || "Issue",
@@ -95,18 +93,18 @@ console.log(`💾 Saving Analysis (Risk: ${riskScore}, Bugs: ${bugReport.bugs.le
       // 4. Post to GitHub with Dashboard Link
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/${repository.id}/scan/${analysis.id}`;
       const reportWithLink = `${finalReport}\n\n---\n[📊 View Detailed Analysis Dashboard](${dashboardUrl})`;
-      
+
       await postComment(data.owner, data.repo, data.prNumber, reportWithLink, data.installationId);
 
     } catch (dbError) {
       // 🚨 THIS IS WHERE IT WAS FAILING BEFORE
       console.error("❌ CRITICAL DATABASE ERROR:", dbError);
       console.error("⚠️ Payload that failed:", JSON.stringify({ riskScore, bugs: cleanBugs }));
-      
+
       // Fallback: Post comment without link so you still see results
       await postComment(data.owner, data.repo, data.prNumber, finalReport, data.installationId);
     }
-    
+
   } catch (error) {
     console.error("🔥 Orchestrator Failed:", error);
   }

@@ -1,10 +1,8 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { syncRepositoriesForUser } from '@/lib/github/client'
-
-const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
@@ -46,13 +44,13 @@ export async function POST(req: Request) {
 
   // Handle the Event
   const eventType = evt.type
-  
+
   if (eventType === 'user.created' || eventType === 'user.updated') {
     const { id, email_addresses, first_name, last_name, username, image_url, external_accounts } = evt.data;
-    
+
     // 1. Get the best possible name
-    const primaryName = first_name 
-      ? `${first_name} ${last_name || ''}`.trim() 
+    const primaryName = first_name
+      ? `${first_name} ${last_name || ''}`.trim()
       : username;
 
     // 2. Extract GitHub ID safely (Crucial for Repo Sync!)
@@ -91,7 +89,7 @@ export async function POST(req: Request) {
         // Sync repositories in the background (don't await to avoid blocking webhook response)
         syncRepositoriesForUser(id, githubId).catch(console.error);
       }
-    
+
     } catch (dbError) {
       console.error('❌ Database Sync Error:', dbError);
       return new Response('Database error', { status: 500 });
