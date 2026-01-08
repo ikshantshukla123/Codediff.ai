@@ -1,10 +1,9 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState, useEffect } from "react";
 import { Github, Plus, ArrowRight, ShieldAlert, Activity, GitBranch } from "lucide-react";
 import Link from "next/link";
-import { syncRepositoriesForUser } from "@/lib/github/client";
 import { Button } from "@/components/ui/Button";
-import { prisma } from "@/lib/prisma";
 
 // Inline Premium Card
 function PremiumCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -15,75 +14,63 @@ function PremiumCard({ children, className = "" }: { children: React.ReactNode; 
   );
 }
 
-export default async function Dashboard() {
-  const { userId } = await auth();
-  const user = await currentUser();
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-6 pb-20">
+      <div className="max-w-7xl mx-auto space-y-12 py-12">
+        <div className="flex justify-between items-center">
+          <div className="h-10 w-48 bg-[#1a1a1a] rounded animate-pulse" />
+          <div className="h-10 w-32 bg-[#1a1a1a] rounded animate-pulse" />
+        </div>
 
-  if (!userId || !user) redirect("/");
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="h-40 bg-[#1a1a1a] rounded-xl animate-pulse" />
+          <div className="h-40 bg-[#1a1a1a] rounded-xl animate-pulse" />
+          <div className="h-40 bg-[#1a1a1a] rounded-xl animate-pulse" />
+        </div>
 
-  // 🛡️ SELF-HEALING (Keep your existing sync logic)
-  const githubAccount = user.externalAccounts.find((acc) => acc.provider === 'oauth_github');
-  const githubId = githubAccount && 'providerUserId' in githubAccount
-    ? parseInt(String((githubAccount as { providerUserId?: string }).providerUserId || '0'))
-    : null;
+        <div className="h-64 bg-[#1a1a1a] rounded-xl animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
-  // Retry logic for database operations
-  async function retryOperation<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T | null> {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        return await operation();
-      } catch (error) {
-        console.error(`Database operation failed (attempt ${i + 1}/${maxRetries}):`, error);
-        if (i === maxRetries - 1) {
-          return null;
-        }
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
-      }
-    }
-    return null;
-  }
+interface Repository {
+  id: string;
+  name: string;
+  createdAt: string;
+  analyses: {
+    riskScore: number;
+    createdAt: string;
+  }[];
+}
 
-  // Try to sync user data
-  await retryOperation(async () => {
-    return prisma.user.upsert({
-      where: { id: userId },
-      update: {
-        email: user.emailAddresses[0].emailAddress,
-        name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username,
-        ...(githubId ? { githubId } : {})
-      },
-      create: {
-        id: userId,
-        email: user.emailAddresses[0].emailAddress,
-        name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.username,
-        githubId: githubId
-      }
-    });
-  });
+export default function Dashboard() {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
 
-  const repositories = await retryOperation(async () => {
-    return prisma.repository.findMany({
-      where: { userId: userId },
-      orderBy: { createdAt: "desc" },
-      include: { analyses: { take: 1, orderBy: { createdAt: 'desc' } } }
-    });
-  }) || [];
+  useEffect(() => {
+    fetch('/api/dashboard-data')
+      .then(res => {
+        if (res.status === 401) return null;
+        return res.json();
+      })
+      .then(data => {
+        if (data) setData(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch dashboard data", err);
+        setLoading(false);
+      });
+  }, []);
 
-  if (githubId && repositories.length === 0) {
-    syncRepositoriesForUser(userId, githubId).catch(console.error);
-  }
+  if (loading) return <LoadingSkeleton />;
+  if (!data) return null;
 
-  // Stats Logic
-  const totalRepos = repositories.length;
-  const allAnalyses = repositories.flatMap(repo => repo.analyses);
-  const avgRiskScore = allAnalyses.length > 0
-    ? Math.round(allAnalyses.reduce((sum, a) => sum + a.riskScore, 0) / allAnalyses.length)
-    : 0;
-  const criticalIssues = allAnalyses.reduce((sum, a) => {
-    const bugs = Array.isArray(a.bugs) ? a.bugs : [];
-    return sum + bugs.filter((b: any) => b.severity === "HIGH").length;
-  }, 0);
+  const { repositories = [], stats = {} } = data;
+  const { totalRepos = 0, avgRiskScore = 0, highRisk = 0 } = stats;
+  const criticalIssues = highRisk;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-white/10 pb-20">
@@ -146,9 +133,11 @@ export default async function Dashboard() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Repositories</h2>
             <div className="flex gap-2">
-              <div className="text-xs text-[#525252] font-mono bg-[#111] px-2 py-1 rounded border border-[#262626]">
-                Scroll to view more →
-              </div>
+              <Link href="/dashboard/repositories">
+                <Button variant="outline" size="sm" className="h-8 text-xs border-[#262626] text-[#a1a1aa] hover:text-white">
+                  View All Repositories <ArrowRight className="w-3 h-3 ml-2" />
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -165,8 +154,8 @@ export default async function Dashboard() {
                  flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-hide 
                  -mx-6 px-6
                ">
-              {repositories.map((repo) => {
-                const lastScan = repo.analyses[0];
+              {repositories.map((repo: Repository) => {
+                const lastScan = repo.analyses?.[0];
                 const riskScore = lastScan?.riskScore || 0;
                 const securityScore = 100 - riskScore;
 
@@ -227,6 +216,58 @@ export default async function Dashboard() {
               })}
             </div>
           )}
+        </div>
+
+        {/* Recent Scans */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+          </div>
+
+          <div className="bg-[#111] border border-[#262626] rounded-xl overflow-hidden">
+            {/* Table Header */}
+            <div className="grid grid-cols-4 p-4 border-b border-[#262626] text-xs font-medium text-[#525252] uppercase tracking-wider bg-[#0f0f0f]">
+              <div className="pl-2">Repository</div>
+              <div>Context</div>
+              <div>Risk Score</div>
+              <div className="text-right pr-2">Date</div>
+            </div>
+
+            {/* Rows */}
+            {data.recentAnalyses?.map((analysis: any) => (
+              <Link key={analysis.id} href={`/dashboard/${analysis.repository.id}/analysis/${analysis.id}`} className="grid grid-cols-4 p-4 border-b border-[#262626] last:border-0 hover:bg-[#1a1a1a] transition-colors items-center group">
+                <div className="flex items-center gap-3 font-medium text-white px-2">
+                  <Github className="w-4 h-4 text-[#525252]" />
+                  <span className="truncate">{analysis.repository.name}</span>
+                </div>
+                <div className="text-sm text-[#a1a1aa] flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-[#525252]" />
+                  <span className="font-mono text-xs">PR #{analysis.prNumber || 'MANUAL'}</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${analysis.riskScore > 70 ? 'bg-red-500' : analysis.riskScore > 40 ? 'bg-yellow-500' : 'bg-emerald-500'}`} />
+                    <span className={`text-sm font-medium ${analysis.riskScore > 70 ? 'text-red-400' :
+                        analysis.riskScore > 40 ? 'text-yellow-400' :
+                          'text-emerald-400'
+                      }`}>
+                      {analysis.riskScore > 70 ? 'High Risk' : analysis.riskScore > 40 ? 'Medium Risk' : 'Low Risk'}
+                    </span>
+                    <span className="text-xs text-[#525252] ml-1">({analysis.riskScore}/100)</span>
+                  </div>
+                </div>
+                <div className="text-right text-xs text-[#525252] font-mono pr-2">
+                  {new Date(analysis.createdAt).toLocaleDateString()} {new Date(analysis.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </Link>
+            ))}
+            {(!data.recentAnalyses || data.recentAnalyses.length === 0) && (
+              <div className="p-12 text-center">
+                <ShieldAlert className="w-8 h-8 text-[#262626] mx-auto mb-3" />
+                <p className="text-[#525252] text-sm">No recent scans found.</p>
+              </div>
+            )}
+          </div>
         </div>
 
       </main>

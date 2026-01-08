@@ -29,9 +29,9 @@ export default function RootLayout({
       <html lang="en">
         <body className={`${inter.className} bg-[#0a0a0a] text-gray-100`}>
           
-          {/* 👇 GLOBAL HEADER START */}
+         
           <Navbar />
-          {/* 👆 GLOBAL HEADER END */}
+        
 
           {children}
         </body>
