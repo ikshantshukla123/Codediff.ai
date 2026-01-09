@@ -4,6 +4,7 @@ import { ArrowLeft, ShieldAlert, CheckCircle, AlertTriangle, FileCode, Clock, Bu
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { ScoreExplanation } from "@/components/ScoreExplanation";
+import { AttackReplay } from "@/components/AttackReplay";
 import { prisma } from "@/lib/prisma";
 
 // 1. Define the Interface explicitly
@@ -269,6 +270,21 @@ export default async function AnalysisDetailPage({
                 </ul>
               </div>
             </div>
+          </Card>
+        )}
+
+        {/* Attack Replay Component */}
+        {analysis.attackProof && (
+          <Card className="border-red-900/50">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-red-400" />
+              Live Attack Simulation Proof
+            </h2>
+            <p className="text-gray-300 mb-4 text-sm">
+              Our security engine successfully demonstrated a real attack against your code.
+              Watch the simulated attack that bypassed your application's security logic:
+            </p>
+            <AttackReplay proof={(analysis.attackProof as any)?.proof} />
           </Card>
         )}
 

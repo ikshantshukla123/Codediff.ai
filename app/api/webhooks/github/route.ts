@@ -1,20 +1,35 @@
 import { headers } from 'next/headers';
 import { verifySignature } from '@/lib/github/utils';
 import { analyzePullRequest } from '@/lib/ai/orchestrator';
+import { rateLimit } from '@/lib/security/rate-limiter';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
-  const body = await req.text();
-  const headersList = await headers(); // Your fix for Next.js 15 is correct ✅
+  try {
+    // Rate limiting
+    const rateLimitResult = rateLimit(req as any, 50, 60000); // 50 requests per minute
+    if (!rateLimitResult.allowed) {
+      return new Response('Rate limit exceeded', { 
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': Math.ceil(rateLimitResult.resetTime / 1000).toString()
+        }
+      });
+    }
 
-  const signature = headersList.get('x-hub-signature-256');
-  const event = headersList.get('x-github-event');
+    const body = await req.text();
+    const headersList = await headers(); // Your fix for Next.js 15 is correct ✅
 
-  if (!signature || !await verifySignature(process.env.GITHUB_WEBHOOK_SECRET!, body, signature)) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+    const signature = headersList.get('x-hub-signature-256');
+    const event = headersList.get('x-github-event');
 
-  const payload = JSON.parse(body);
+    if (!signature || !await verifySignature(process.env.GITHUB_WEBHOOK_SECRET!, body, signature)) {
+      console.warn('🚨 Webhook signature verification failed');
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const payload = JSON.parse(body);
 
   // 🔌 1. HANDLE INSTALLATION (Connect Repos to DB)
   // This runs when user clicks "Install" on GitHub
@@ -82,12 +97,23 @@ export async function POST(req: Request) {
         diffUrl: payload.pull_request.diff_url
       };
 
-      // Trigger AI
-      analyzePullRequest(prData).catch(console.error);
+      // Trigger AI with proper error handling
+      analyzePullRequest(prData).catch((error) => {
+        console.error('❌ Analysis failed for PR:', prData, error);
+        // Could send to monitoring service here
+      });
 
       return new Response('Analysis Queued', { status: 202 });
     }
   }
 
   return new Response('Ignored', { status: 200 });
+
+  } catch (error: any) {
+    console.error('❌ Webhook processing failed:', error);
+    return new Response('Internal Server Error', { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 }

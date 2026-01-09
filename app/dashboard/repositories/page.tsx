@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Github, ArrowRight, ArrowLeft, ArrowRight as ArrowNext } from "lucide-react";
 import Link from "next/link";
+import { SyncButton } from "@/components/SyncButton";
 
 function PremiumCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -68,8 +69,19 @@ export default function RepositoriesPage() {
           </p>
         </div>
 
+        {/* Sync Button */}
+        <div className="bg-[#111111] border border-[#262626] rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-white mb-3">Sync Data</h2>
+          <p className="text-gray-400 text-sm mb-4">
+            If you don't see your repositories or user data, use these buttons to manually sync with GitHub:
+          </p>
+          <SyncButton />
+        </div>
+
         {repositories.length === 0 ? (
-          <div className="text-center py-20 text-[#525252]">No repositories found.</div>
+          <div className="text-center py-20 text-[#525252]">
+            No repositories found. Try syncing your GitHub data above.
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {repositories.map((repo: Repository) => {
