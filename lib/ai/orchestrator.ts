@@ -153,8 +153,13 @@ export async function analyzePullRequest(data: PullRequestData) {
         finalReport = `🚨 **CRITICAL: LIVE ATTACK VERIFIED**\nI simulated a SQL Injection against your code and successfully bypassed the logic.\n\n${finalReport}`;
       }
 
-      const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/${repository.id}/scan/${analysis.id}`;
-      const reportWithLink = `${finalReport}\n\n---\n[📊 View Live Attack Proof](${dashboardUrl})`;
+      // FIX URL CONSTRUCTION: Prevent double slashes and missing base URL
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://codediffai.vercel.app';
+      const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
+      const dashboardUrl = `${cleanBaseUrl}/dashboard/${repository.id}/scan/${analysis.id}`;
+
+      console.log(`📊 Dashboard URL: ${dashboardUrl}`);
+      const reportWithLink = `${finalReport}\n\n---\n[📊 View Complete Analysis](${dashboardUrl})`;
 
       await postComment(data.owner, data.repo, data.prNumber, reportWithLink, data.installationId);
 

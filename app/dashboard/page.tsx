@@ -235,7 +235,7 @@ export default function Dashboard() {
 
             {/* Rows */}
             {data.recentAnalyses?.map((analysis: any) => (
-              <Link key={analysis.id} href={`/dashboard/${analysis.repository.id}/analysis/${analysis.id}`} className="grid grid-cols-4 p-4 border-b border-[#262626] last:border-0 hover:bg-[#1a1a1a] transition-colors items-center group">
+              <Link key={analysis.id} href={`/dashboard/${analysis.repository.id}/scan/${analysis.id}`} className="grid grid-cols-4 p-4 border-b border-[#262626] last:border-0 hover:bg-[#1a1a1a] transition-colors items-center group">
                 <div className="flex items-center gap-3 font-medium text-white px-2">
                   <Github className="w-4 h-4 text-[#525252]" />
                   <span className="truncate">{analysis.repository.name}</span>
@@ -248,8 +248,8 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${analysis.riskScore > 70 ? 'bg-red-500' : analysis.riskScore > 40 ? 'bg-yellow-500' : 'bg-emerald-500'}`} />
                     <span className={`text-sm font-medium ${analysis.riskScore > 70 ? 'text-red-400' :
-                        analysis.riskScore > 40 ? 'text-yellow-400' :
-                          'text-emerald-400'
+                      analysis.riskScore > 40 ? 'text-yellow-400' :
+                        'text-emerald-400'
                       }`}>
                       {analysis.riskScore > 70 ? 'High Risk' : analysis.riskScore > 40 ? 'Medium Risk' : 'Low Risk'}
                     </span>

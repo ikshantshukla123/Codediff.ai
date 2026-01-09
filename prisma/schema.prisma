@@ -43,3 +43,12 @@ model Analysis {
   attackProof  Json? // Stores the "Live Attack" result
   repository   Repository @relation(fields: [repositoryId], references: [id])
 }
+
+model WebhookLog {
+  id         String   @id @default(cuid())
+  deliveryId String   @unique
+  event      String
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  payload    Json?
+}
