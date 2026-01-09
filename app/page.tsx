@@ -56,7 +56,7 @@ export default async function HomePage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <SignedOut>
-                <Link href="/dashboard">
+                <Link href="/sign-in">
                   <Button variant="primary" size="lg">
                     Get Started Free
                   </Button>
@@ -530,7 +530,7 @@ export default async function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <SignedOut>
-              <Link href="/dashboard">
+              <Link href="/sign-in">
                 <Button variant="primary" size="lg" icon={<ArrowRight className="w-5 h-5" />}>
                   Get Started Free
                 </Button>
