@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { Button } from "../ui/Button"; // Assuming you have this
-import { 
-  LayoutDashboard, 
-  BarChart3, 
-  Shield, 
-  Github, 
+import {
+  LayoutDashboard,
+  BarChart3,
+  Shield,
+  Github,
   Brain,
   Zap,
   Dna,
@@ -90,7 +90,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-800 bg-black/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-        
+
         {/* Left: Logo & Desktop Nav */}
         <div className="flex items-center gap-8">
           {/* Logo */}
@@ -115,9 +115,18 @@ export function Navbar() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-4">
+          {/* How It Works - Available to everyone */}
+          <Link
+            href="/how-it-works"
+            className="hidden items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-white sm:flex"
+          >
+            <Brain className="h-3.5 w-3.5" />
+            <span>How It Works</span>
+          </Link>
+
           <SignedIn>
             {/* Repo Connect (Compact) */}
-            <Link 
+            <Link
               href={process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || "#"}
               className="hidden items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-white sm:flex"
             >
@@ -140,9 +149,9 @@ export function Navbar() {
                 </Button>
               </SignInButton>
             </SignedOut>
-            
+
             <SignedIn>
-              <UserButton 
+              <UserButton
                 appearance={{
                   elements: {
                     avatarBox: "h-7 w-7 ring-2 ring-neutral-900",
@@ -155,7 +164,7 @@ export function Navbar() {
 
             {/* Mobile Toggle */}
             <SignedIn>
-              <button 
+              <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="ml-4 md:hidden text-neutral-400 hover:text-white"
               >
@@ -173,7 +182,7 @@ export function Navbar() {
             {NAVIGATION_config.map((item) => (
               <MobileNavItem key={item.label} item={item} pathname={pathname} />
             ))}
-             <Link 
+            <Link
               href={process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || "#"}
               className="flex items-center gap-3 rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white"
             >
@@ -210,9 +219,8 @@ function DesktopNavItem({ item, pathname }: { item: NavItem, pathname: string | 
     return (
       <Link
         href={item.href || "#"}
-        className={`px-3 py-2 text-sm font-medium transition-colors rounded-md ${
-          isActive ? "text-white bg-neutral-900" : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
-        }`}
+        className={`px-3 py-2 text-sm font-medium transition-colors rounded-md ${isActive ? "text-white bg-neutral-900" : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
+          }`}
       >
         {item.label}
       </Link>
@@ -221,15 +229,14 @@ function DesktopNavItem({ item, pathname }: { item: NavItem, pathname: string | 
 
   // Dropdown Trigger
   return (
-    <div 
+    <div
       className="relative"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <button
-        className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-md ${
-          isOpen || isActive ? "text-white bg-neutral-900" : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
-        }`}
+        className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors rounded-md ${isOpen || isActive ? "text-white bg-neutral-900" : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
+          }`}
       >
         {item.label}
         <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
@@ -237,9 +244,8 @@ function DesktopNavItem({ item, pathname }: { item: NavItem, pathname: string | 
 
       {/* Dropdown Content */}
       <div
-        className={`absolute left-0 top-full pt-2 w-64 transition-all duration-200 ${
-          isOpen ? "opacity-100 translate-y-0 visible" : "opacity-0 translate-y-1 invisible"
-        }`}
+        className={`absolute left-0 top-full pt-2 w-64 transition-all duration-200 ${isOpen ? "opacity-100 translate-y-0 visible" : "opacity-0 translate-y-1 invisible"
+          }`}
       >
         <div className="overflow-hidden rounded-lg border border-neutral-800 bg-neutral-950 shadow-xl ring-1 ring-black/5">
           <div className="p-1">
@@ -282,9 +288,8 @@ function MobileNavItem({ item, pathname }: { item: NavItem, pathname: string | n
     return (
       <Link
         href={item.href || "#"}
-        className={`block rounded-md px-4 py-3 text-sm font-medium ${
-          isActive ? "bg-neutral-900 text-white" : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
-        }`}
+        className={`block rounded-md px-4 py-3 text-sm font-medium ${isActive ? "bg-neutral-900 text-white" : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
+          }`}
       >
         {item.label}
       </Link>
@@ -295,14 +300,13 @@ function MobileNavItem({ item, pathname }: { item: NavItem, pathname: string | n
     <div className="rounded-md bg-neutral-950/50">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`flex w-full items-center justify-between px-4 py-3 text-sm font-medium ${
-          isActive ? "text-white" : "text-neutral-400"
-        }`}
+        className={`flex w-full items-center justify-between px-4 py-3 text-sm font-medium ${isActive ? "text-white" : "text-neutral-400"
+          }`}
       >
         <span>{item.label}</span>
         <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
       </button>
-      
+
       {isExpanded && (
         <div className="space-y-1 px-2 pb-2">
           {item.items.map((subItem) => (
