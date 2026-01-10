@@ -177,10 +177,7 @@ We are building the operating system for Fintech Security.
 *Visualizing high-stakes vulnerabilities mapped against potential financial loss.*
 ![Compliance Matrix](./public/scan.png)
 
-### 3. Multi-Model Orchestration Architecture
-*How we route traffic between Groq (Speed) and Gemini (Security).*
-![System Architecture](./public/architecture-diagram.png)
----
+
 
 Made with ❤️ for teams who measure security by dollars saved, not checklists.
 
