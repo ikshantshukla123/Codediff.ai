@@ -200,6 +200,9 @@ We are building the operating system for Fintech Security.
 ### 4.How It Works(the calculation of scores etc):
 ![How It Works](./public/help.png)
 
+### 5.Summary:
+![Summary created](./public/email.png)
+
 Made with ❤️ for teams who measure security by dollars saved, not checklists.
 
 
