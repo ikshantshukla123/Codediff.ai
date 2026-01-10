@@ -194,10 +194,11 @@ We are building the operating system for Fintech Security.
 *Visualizing high-stakes vulnerabilities mapped against potential financial loss.*
 ![Compliance Matrix](./public/scan.png)
 
-### 2.Neural Terminal:
+### 3.Neural Terminal:
 ![Fake Terminal](./public/terminal.png)
 
-
+### 4.How It Works(the calculation of scores etc):
+![How It Works](./public/help.png)
 
 Made with ❤️ for teams who measure security by dollars saved, not checklists.
 
