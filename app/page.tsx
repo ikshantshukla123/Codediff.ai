@@ -45,12 +45,12 @@ export default async function HomePage() {
               <br />
               <span className="text-white">Predict Breaks.</span>
               <br />
-              <span className="text-white">Auto-Fix Code.</span>
+              <span className="text-white">Calculate Loss.</span>
             </h1>
 
             <p className="text-xl text-[#a1a1aa] max-w-2xl mx-auto leading-relaxed">
               CodeDiff AI doesn&apos;t just tell you &quot;here&apos;s a bug.&quot; We prove financial vulnerabilities,
-              predict architecture breaks, and automatically fix code. Making technical debt visible,
+              predict architecture breaks, and save you time fix code. Making technical debt visible,
               predictable, and fixable.
             </p>
 
