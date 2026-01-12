@@ -88,9 +88,9 @@ export async function analyzePullRequest(data: PullRequestData) {
 
     const status = riskScore > 70 ? "VULNERABLE" : riskScore > 40 ? "WARNING" : "SECURE";
 
-    // 🔍 2. ROBUST DATABASE LOOKUP (THE FIX)
+    //  2. ROBUST DATABASE LOOKUP (THE FIX)
     // We search by name ONLY first, ignoring case sensitivity.
-    console.log(`🔍 Looking for repo "${data.owner}/${data.repo}" in DB...`);
+    console.log(` Looking for repo "${data.owner}/${data.repo}" in DB...`);
 
     const repository = await retryDatabaseOperation(async () => {
       return await prisma.repository.findFirst({
@@ -118,7 +118,7 @@ export async function analyzePullRequest(data: PullRequestData) {
       });
     }
 
-    // 💾 3. SAVE TO DATABASE
+    // 3. SAVE TO DATABASE
     console.log(`💾 Saving Analysis (Risk: ${riskScore}, Bugs: ${allBugs.length})...`);
 
     // SANITIZATION: Clean the bugs array to ensure it's valid JSON for Postgres

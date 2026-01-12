@@ -29,6 +29,7 @@ model Repository {
   user           User       @relation(fields: [userId], references: [id])
 
   @@unique([githubRepoId, userId])
+  @@index([userId])
 }
 
 model Analysis {
@@ -42,6 +43,13 @@ model Analysis {
   status       String     @default("PENDING")
   attackProof  Json? // Stores the "Live Attack" result
   repository   Repository @relation(fields: [repositoryId], references: [id])
+
+  @@index([repositoryId])
+
+  @@index([createdAt])
+
+  @@index([riskScore]) 
+
 }
 
 model WebhookLog {
