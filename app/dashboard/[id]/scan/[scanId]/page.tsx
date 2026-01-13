@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import { ArrowLeft, ShieldAlert, CheckCircle, AlertTriangle, FileCode, Clock, Bug as BugIcon, DollarSign, TrendingDown } from "lucide-react";
@@ -5,6 +8,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { ScoreExplanation } from "@/components/ScoreExplanation";
 import { AttackReplay } from "@/components/AttackReplay";
+import { LiveStatus } from "@/components/analysis/LiveStatus";
 import { prisma } from "@/lib/prisma";
 
 // 1. Define the Interface explicitly
@@ -56,7 +60,7 @@ const formatCurrency = (min: number, max: number) => {
 export default async function AnalysisDetailPage({
   params
 }: {
-  params: Promise<{ id: string; scanId: string }> // Changed analysisId -> scanId to match your error path
+  params: Promise<{ id: string; scanId: string }>
 }) {
   const { userId } = await auth();
   const { id, scanId } = await params;
@@ -133,6 +137,7 @@ export default async function AnalysisDetailPage({
               <p className="text-gray-500 font-mono text-sm">
                 {analysis.repository.name} • PR #{analysis.prNumber}
               </p>
+              <LiveStatus scanId={scanId} initialStatus={analysis.status} />
             </div>
             <span className={`px-3 py-1 rounded text-sm font-semibold border ${getStatusColor(analysis.status)}`}>
               {analysis.status}

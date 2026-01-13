@@ -3,6 +3,7 @@
 // 1. Define Types (So TypeScript is happy)
 interface Bug {
   type: string;
+  file?: string;
   line?: number;
   description: string;
   severity: "HIGH" | "MEDIUM" | "LOW";
@@ -25,10 +26,15 @@ export async function findBugsWithOpenRouter(diff: string): Promise<BugReport> {
   2. 🔓 Data Leaks (Logging unencrypted secrets/PII)
   3. ⚠️ SQL Injection / Insecure Endpoints
 
+  IMPORTANT:
+- Use the file path from diff headers (lines like: "diff --git a/... b/...")
+- Always include "file" in each bug if possible.
+- Line number should be the NEW file line number.
+
   Return a JSON object ONLY in this format:
   {
     "bugs": [
-      { "type": "Race Condition", "line": 42, "description": "Update without lock", "severity": "HIGH" }
+      { "type": "Race Condition","file": "src/payment-service.ts", "line": 42, "description": "Update without lock", "severity": "HIGH" }
     ]
   }
   `;
@@ -39,13 +45,14 @@ export async function findBugsWithOpenRouter(diff: string): Promise<BugReport> {
       headers: {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:3000",
+ "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+
         "X-Title": "CodeDiff AI"
       },
       body: JSON.stringify({
         // Use DeepSeek V3 (Cheap & Smart)
         model: "deepseek/deepseek-chat", 
-        max_tokens: 1000, // 👈 CRITICAL FIX: Stops the "Insufficient Credits" error
+        max_tokens: 1000, // Stops the "Insufficient Credits" error
         messages: [
           { role: "system", content: PROMPT },
           { role: "user", content: diff.substring(0, 15000) }

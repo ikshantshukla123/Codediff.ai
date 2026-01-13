@@ -45,18 +45,17 @@ model Analysis {
   repository   Repository @relation(fields: [repositoryId], references: [id])
 
   @@index([repositoryId])
-
   @@index([createdAt])
-
-  @@index([riskScore]) 
-
+  @@index([riskScore])
 }
 
 model WebhookLog {
-  id         String   @id @default(cuid())
-  deliveryId String   @unique
-  event      String
-  processed  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  payload    Json?
+  id          String    @id @default(cuid())
+  deliveryId  String    @unique
+  event       String
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+  payload     Json?
 }

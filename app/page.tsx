@@ -50,7 +50,7 @@ export default async function HomePage() {
 
             <p className="text-xl text-[#a1a1aa] max-w-2xl mx-auto leading-relaxed">
               CodeDiff AI doesn&apos;t just tell you &quot;here&apos;s a bug.&quot; We prove financial vulnerabilities,
-              predict architecture breaks, and save you time fix code. Making technical debt visible,
+              predict architecture breaks, and save your time fix code. Making technical debt visible,
               predictable, and fixable.
             </p>
 
@@ -104,7 +104,7 @@ export default async function HomePage() {
             </h2>
             <p className="text-lg text-[#a1a1aa]">
               Current tools tell you what&apos;s wrong <span className="text-white">now</span>.
-              We predict what will break in <span className="text-white">3 months</span> and fix it automatically.
+              We predict what will break in <span className="text-white">3 months</span> and fix it.
             </p>
           </div>
 

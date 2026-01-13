@@ -1,8 +1,8 @@
 import { headers } from 'next/headers';
 import { verifySignature } from '@/lib/github/utils';
-import { analyzePullRequest } from '@/lib/ai/orchestrator';
 import { rateLimit } from '@/lib/security/rate-limiter';
 import { prisma } from '@/lib/prisma';
+import { inngest } from '@/lib/inngest/client';
 
 export async function POST(req: Request) {
   try {
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 🤖 2. HANDLE PULL REQUEST (Your Existing Logic)
+    // 🤖 2. HANDLE PULL REQUEST (Enqueue for background processing)
     if (event === 'pull_request') {
       if (payload.action === 'opened' || payload.action === 'synchronize') {
         const prData = {
@@ -116,31 +116,36 @@ export async function POST(req: Request) {
           repo: payload.repository.name,
           prNumber: payload.number,
           installationId: payload.installation.id,
-          diffUrl: payload.pull_request.diff_url
+          diffUrl: payload.pull_request.diff_url,
+          deliveryId
         };
 
-        // FIRE AND FORGET: Don't await - respond to GitHub immediately
-        analyzePullRequest(prData).catch((error) => {
-          console.error('❌ Analysis failed for PR:', prData, error);
-          // Update webhook log as failed if needed
-          if (deliveryId) {
-            prisma.webhookLog.update({
-              where: { deliveryId },
-              data: { processed: false }
-            }).catch(console.error);
-          }
-        }).then(() => {
-          // Mark as successfully processed
-          if (deliveryId) {
-            prisma.webhookLog.update({
-              where: { deliveryId },
-              data: { processed: true }
-            }).catch(console.error);
-          }
-        });
+        try {
+          // Enqueue background job with Inngest
+          await inngest.send({
+            name: "github/pull_request.received",
+            data: prData
+          });
 
-        console.log(`🚀 Analysis queued for PR #${prData.prNumber} (${prData.owner}/${prData.repo})`);
-        return new Response('Analysis queued', { status: 200 }); // Return 200, not 202
+          console.log(`🚀 PR analysis job enqueued for #${prData.prNumber} (${prData.owner}/${prData.repo})`);
+          return new Response('Analysis job enqueued', { status: 200 });
+        } catch (error) {
+          console.error('❌ Failed to enqueue PR analysis job:', error);
+
+          // Mark webhook as failed to process
+          if (deliveryId) {
+            await prisma.webhookLog.update({
+              where: { deliveryId },
+              data: {
+                processed: false,
+                processedAt: new Date(),
+                error: error instanceof Error ? error.message : String(error)
+              }
+            }).catch(console.error);
+          }
+
+          return new Response('Failed to enqueue job', { status: 500 });
+        }
       }
     }
 
