@@ -74,6 +74,31 @@ CodeDiff AI assigns a dollar value to code quality.
 ### 🧬 Self-Healing Infrastructure
 The system includes a robust self-healing database layer (`prisma/schema.prisma`). If a GitHub App installation ID changes or a repository is moved, CodeDiff automatically updates strict relational links, ensuring audit trails never break.
 
+### ⚡ Event-Driven Background Processing (Inngest)
+**Why Traditional Webhooks Fail at Scale:**
+GitHub webhooks have strict timeout limits (10 seconds). Complex AI analysis can take 30+ seconds, causing webhook failures and missed PR reviews.
+
+**Our Solution - Inngest Queue Architecture:**
+- **Webhook Response Time:** <100ms (vs. 30+ seconds previously)
+- **Reliability:** Automatic retry with exponential backoff
+- **Scalability:** Parallel processing of multiple PRs
+- **Monitoring:** Real-time job status and error tracking
+- **Idempotency:** Duplicate webhook prevention with database-backed deduplication
+
+**How It Works:**
+1. GitHub webhook arrives → Immediate 200 OK response in <100ms
+2. Event queued to Inngest with PR metadata
+3. Background worker processes AI analysis asynchronously
+4. Database tracks job status and handles retries on failure
+5. Results stored and displayed in real-time dashboard
+
+**Implementation Details:**
+- **Queue System:** Inngest handles event routing and retry logic
+- **Worker Functions:** `lib/inngest/functions/analyzePullRequest.ts`
+- **Database Tracking:** `WebhookLog` model prevents duplicate processing
+- **Development:** Local Inngest dev server with hot reload support
+- **Production:** Serverless deployment with Vercel integration
+
 ---
 
 ## 🏗️ System Architecture
@@ -83,26 +108,35 @@ CodeDiff AI follows an event-driven, serverless architecture deployed on Vercel(
 ```mermaid
 graph TD
     A[GitHub Webhook] -->|Push/PR Event| B(Next.js Edge API)
-    B --> C{AI Orchestrator}
+    B --> C{Event Classification}
+    C -->|PR Analysis Required| D[Inngest Queue]
+    D --> E{AI Orchestrator}
     
-    subgraph "The Council of AIs"
-        C -->|Intent Classify| D[HuggingFace]
-        C -->|Bug Hunt| E[DeepSeek / Groq]
-        C -->|Impact Analysis| F[Gemini 1.5 Pro]
+    subgraph "Background Processing Layer"
+        D --> F[Webhook Log & Dedup]
+        F --> G[Job Retry Logic]
+        G --> H[Status Tracking]
     end
     
-    D & E & F --> G[Synthesis Engine]
-    G --> H[Risk Score Algorithm]
+    subgraph "The Council of AIs"
+        E -->|Intent Classify| I[HuggingFace]
+        E -->|Bug Hunt| J[DeepSeek / Groq]
+        E -->|Impact Analysis| K[Gemini 1.5 Pro]
+    end
     
-    H --> I[(Neon Serverless DB)]
-    H --> J[GitHub PR Comment]
-    H --> K[Next.js Dashboard]
+    I & J & K --> L[Synthesis Engine]
+    L --> M[Risk Score Algorithm]
+    
+    M --> N[(Neon Serverless DB)]
+    M --> O[GitHub PR Comment]
+    M --> P[Next.js Dashboard]
 ```
 
 **Tech Stack:**
 *   **Framework:** Next.js 14 (App Router)
 *   **Language:** TypeScript
 *   **Database:** PostgreSQL (Neon) via Prisma ORM
+*   **Background Processing:** Inngest (Event-driven job queue)
 *   **Auth:** Clerk
 *   **AI Providers:** Google Gemini, OpenRouter (DeepSeek), HuggingFace Inference
 *   **Visualization:** Recharts & Lucide React
@@ -138,6 +172,9 @@ OPENROUTER_API_KEY="sk-or-..."
 HUGGINGFACE_API_KEY="hf_..."
 # GROQ_API_KEY="gsk_..." (Optional if using Groq fallback)
 
+# Background Processing (Inngest)
+INNGEST_EVENT_KEY="your_inngest_event_key_from_dashboard"
+
 # GitHub App Configuration
 GITHUB_APP_ID="12345"
 GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----..."
@@ -162,10 +199,26 @@ npx prisma db push
 ```
 
 ### 5. Run Development Server
+For background job processing, you need to run both the Next.js app and Inngest dev server:
+
+**Option A (Recommended) - Run both simultaneously:**
 ```bash
-npm run dev
+npm run dev:all
 ```
-Visit `http://localhost:3000` to access the dashboard. To trigger an audit, use a tool like `ngrok` to tunnel GitHub webhooks to your local machine.
+
+**Option B - Run in separate terminals:**
+```bash
+# Terminal 1: Next.js app
+npm run dev
+
+# Terminal 2: Inngest background job processor
+npm run dev:inngest
+```
+
+Visit `http://localhost:3000` for the main dashboard.  
+Visit `http://localhost:8288` for the Inngest dev UI (job monitoring).
+
+**Important:** To test webhook processing locally, use ngrok to tunnel GitHub webhooks to your local machine. Without the Inngest dev server, PR analysis jobs will queue but not process.
 
 ---
 
