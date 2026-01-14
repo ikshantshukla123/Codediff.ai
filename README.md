@@ -228,12 +228,12 @@ We are building the operating system for Fintech Security.
 
 *   **Phase 1 (Current): Economic Security Engine**
     *   Detection, Financial Quantification,Live vulnaribilty and Compliance Mapping.
-*   **Phase 2 (Q4 2026): Predictive Debt Oracle**
-    *   Analyzes git velocity and churn to predict architectural breakage.
-    *   "If you merge this, module X will fail in 3 months."
-*   **Phase 3 (Year 1): Codebase DNA Sequencer**
-    *   Genetic analysis of project health over time, tracking "mutation" of code patterns into anti-patterns.
-
+*   **Phase 2 (Q4 2026): IDE Extension**
+    *   Bringing the "Financial Risk" score directly into VS Code so developers see the cost of their code as they type.
+   
+*   **Phase 3 (Year 1): Student Security Lab && Enterprise Integration**
+    *  We are building a dedicated dashboard for students to learn "Financial Coding." They can simulate errors and see exactly how a single bug could cause millions in losses, preparing them for the high-stakes reality of the industry.
+    * Adding SSO and team-based liability dashboards for CTOs to track technical debt reduction in dollar amounts.
 ---
 
 ## 📸 Screenshots
