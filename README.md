@@ -18,11 +18,6 @@
 
 ---
 
-## 🏁 **Final Note to AlamedaHacks Judges**
-
-> **🏁 Final Note to Judges:**
-> Every innovative feature in CodeDiff AI (The Attack Simulator, The Financial Calculator, and The Multi-Model Council) was built **entirely during this hackathon**. We used a standard Next.js boilerplate for setup, but 100% of the logic, AI orchestration, and security engines are original work created for this event.
-
 
 
 ## 🚀 The Problem vs. The Solution
