@@ -42,14 +42,14 @@ export function UserActions() {
       </Link>
 
       <SignedIn>
-        {/* Repo Connect (Compact) */}
+        {/* Repo Connect (Compact)
         <Link
           href={process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || "#"}
           className="hidden items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-white sm:flex focus:outline-none focus:ring-2 focus:ring-white/20"
         >
           <Github className="h-3.5 w-3.5" aria-hidden="true" />
           <span>Connect Repo</span>
-        </Link>
+        </Link> */}
 
         {/* Settings Icon */}
         <Link

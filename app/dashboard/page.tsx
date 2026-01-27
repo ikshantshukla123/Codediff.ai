@@ -145,7 +145,7 @@ export default function Dashboard() {
             <div className="border border-dashed border-[#262626] rounded-xl p-12 text-center bg-[#0a0a0a]">
               <h3 className="text-lg text-white mb-2">No repositories connected</h3>
               <Link href={process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || "#"}>
-                <Button variant="outline">Connect GitHub</Button>
+                <Button variant="outline">Connect repo</Button>
               </Link>
             </div>
           ) : (
@@ -180,7 +180,7 @@ export default function Dashboard() {
                             <div className="p-2 bg-[#1a1a1a] rounded border border-[#262626] shrink-0">
                               <Github className="w-4 h-4 text-white" />
                             </div>
-                            {/* 👇 THE FIX: Added 'break-all' and removed truncate/max-w */}
+                        
                             <span className="font-medium text-white break-all leading-tight">
                               {repo.name}
                             </span>

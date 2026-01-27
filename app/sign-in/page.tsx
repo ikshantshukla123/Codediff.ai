@@ -3,6 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Github, Shield, ArrowRight, CheckCircle, Zap } from "lucide-react";
+import { SignInButton } from "@clerk/nextjs";
+
 
 export default async function SignInPage() {
   const { userId } = await auth();
@@ -51,7 +53,7 @@ export default async function SignInPage() {
             </div>
           </div>
 
-          {/* GitHub Connect Button */}
+          {/* GitHub Connect Button
           <Link
             href={process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || "#"}
             className="block"
@@ -61,7 +63,19 @@ export default async function SignInPage() {
               <span>Connect with GitHub</span>
               <ArrowRight className="h-4 w-4 ml-auto" />
             </Button>
-          </Link>
+          </Link> */}
+
+
+<SignInButton mode="modal">
+  <Button
+    variant="primary"
+    className="w-full flex items-center justify-center gap-3 py-3"
+  >
+    <Github className="h-5 w-5" />
+    <span>Connect with GitHub</span>
+    <ArrowRight className="h-4 w-4 ml-auto" />
+  </Button>
+</SignInButton>
 
           {/* Privacy Note */}
           <div className="bg-[#0a0a0a] border border-[#262626] rounded-lg p-4">
@@ -91,8 +105,5 @@ export default async function SignInPage() {
 
       </div>
     </div>
-
-
-
    );
 }

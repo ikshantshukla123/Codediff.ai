@@ -69,11 +69,8 @@ export default async function HomePage() {
                   </Button>
                 </Link>
               </SignedIn>
-              <Link href={process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || "#"}>
-                <Button variant="outline" size="lg">
-                  Connect GitHub
-                </Button>
-              </Link>
+             
+             
             </div>
 
             {/* Stats */}
