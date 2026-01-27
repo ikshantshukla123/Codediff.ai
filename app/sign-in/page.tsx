@@ -13,6 +13,7 @@ export default async function SignInPage() {
   }
 
   return (
+
     <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
 
@@ -90,5 +91,8 @@ export default async function SignInPage() {
 
       </div>
     </div>
-  );
+
+
+
+   );
 }

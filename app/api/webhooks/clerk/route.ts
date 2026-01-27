@@ -94,7 +94,24 @@ export async function POST(req: Request) {
       console.error('❌ Database Sync Error:', dbError);
       return new Response('Database error', { status: 500 });
     }
+  } 
+
+  /* ---------------- USER DELETED ---------------- */
+if (eventType === 'user.deleted') {
+  const { id } = evt.data;
+
+  try {
+    await prisma.user.delete({
+      where: { id }, // Clerk user id
+    });
+
+    console.log(`🗑️ Deleted user from DB: ${id}`);
+  } catch (err) {
+    console.error('❌ Error deleting user from DB:', err);
+    // IMPORTANT: still return 200 so Clerk doesn't retry forever
   }
+}
+
 
   return new Response('Webhook received', { status: 200 })
 }

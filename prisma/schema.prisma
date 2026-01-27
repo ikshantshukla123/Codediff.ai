@@ -18,6 +18,7 @@ model User {
   repositories Repository[]
 }
 
+
 model Repository {
   id             String     @id @default(uuid())
   githubRepoId   Int
@@ -26,7 +27,8 @@ model Repository {
   userId         String
   createdAt      DateTime   @default(now())
   analyses       Analysis[]
-  user           User       @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([githubRepoId, userId])
   @@index([userId])
@@ -41,13 +43,15 @@ model Analysis {
   issuesFound  Int        @default(0)
   repositoryId String
   status       String     @default("PENDING")
-  attackProof  Json? // Stores the "Live Attack" result
-  repository   Repository @relation(fields: [repositoryId], references: [id])
+  attackProof  Json?
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
   @@index([repositoryId])
   @@index([createdAt])
   @@index([riskScore])
 }
+
 
 model WebhookLog {
   id          String    @id @default(cuid())
