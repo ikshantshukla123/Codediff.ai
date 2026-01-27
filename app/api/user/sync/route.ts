@@ -7,6 +7,15 @@ export async function POST() {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // Validate required environment variables
+  if (!process.env.GITHUB_APP_ID || !process.env.GITHUB_PRIVATE_KEY) {
+    console.error('❌ GitHub App credentials missing');
+    return Response.json({
+      error: 'Configuration error',
+      details: 'GitHub App credentials not configured in environment'
+    }, { status: 500 });
+  }
+
   try {
     // Get current user data from Clerk
     const clerkUser = await currentUser();
@@ -74,10 +83,24 @@ export async function POST() {
     });
 
   } catch (error: any) {
-    console.error('❌ User sync failed:', error);
+    console.error('❌ User sync failed:', {
+      error: error.message,
+      stack: error.stack,
+      code: error.code,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+
+    // Return detailed error for debugging
     return Response.json({
       error: 'Failed to sync user data',
-      details: error.message
+      details: error.message,
+      code: error.code,
+      hint: !process.env.GITHUB_APP_ID
+        ? 'GitHub App credentials missing in environment'
+        : !process.env.DATABASE_URL
+          ? 'Database URL missing in environment'
+          : 'Check server logs for details'
     }, { status: 500 });
   }
 }

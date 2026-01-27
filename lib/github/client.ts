@@ -28,6 +28,11 @@ function getAppClient() {
 // Sync repositories for a user when their githubId is set
 export async function syncRepositoriesForUser(userId: string, githubId: number) {
   try {
+    // Validate credentials exist
+    if (!process.env.GITHUB_APP_ID || !process.env.GITHUB_PRIVATE_KEY) {
+      throw new Error('GitHub App credentials not configured');
+    }
+
     const appClient = getAppClient();
 
     // Get all installations for the app
@@ -40,6 +45,8 @@ export async function syncRepositoriesForUser(userId: string, githubId: number) 
 
     if (userInstallations.length === 0) {
       console.log(`ℹ️ No GitHub installations found for user ${userId} (GitHub ID: ${githubId})`);
+      console.log(`ℹ️ Total installations found: ${installations.length}`);
+      console.log(`ℹ️ User needs to install the GitHub App at: ${process.env.NEXT_PUBLIC_GITHUB_INSTALL_URL || 'GitHub App installation page'}`);
       return;
     }
 
